@@ -198,13 +198,13 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
         is_free_shipping = product.get("isFreeShipping", False)
 
         # 배송 타입 구분
+        # 로켓은 기본 무배, 판매자만 무배 여부 표시
         if is_rocket:
-            delivery = "🚀"
+            delivery = "🚀로켓"
+        elif is_free_shipping:
+            delivery = "🏷️무배"
         else:
-            delivery = "🏷️"
-
-        if is_free_shipping:
-            delivery += "무배"
+            delivery = "🏷️유배"  # 유료배송
 
         short_url = await shorten_url(url)
 
@@ -278,7 +278,7 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         rank = product.get("rank", idx)
         is_rocket = product.get("isRocket", False)
 
-        delivery = "🚀" if is_rocket else "🏷️"
+        delivery = "🚀로켓" if is_rocket else "🏷️"
         short_url = await shorten_url(url)
         medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(rank, f"{rank})")
 
@@ -336,7 +336,7 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         is_rocket = product.get("isRocket", False)
         discount_rate = product.get("discountRate", 0)
 
-        delivery = "🚀" if is_rocket else "🏷️"
+        delivery = "🚀로켓" if is_rocket else "🏷️"
 
         # 할인율 표시 (30% 이상이면 핫딜 강조)
         if discount_rate >= 30:
