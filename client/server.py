@@ -78,7 +78,7 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
 @mcp.tool()
 async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> str:
     """
-    쿠팡 카테고리별 베스트 상품을 조회합니다.
+    쿠팡 카테고리별 베스트 상품을 조회합니다. 쿠팡 베스트, 쿠팡 인기, 쿠팡 랭킹, 많이 팔리는 상품 요청 시 사용하세요.
 
     Args:
         category_id (int): 카테고리 ID
@@ -137,7 +137,7 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
 @mcp.tool()
 async def get_coupang_goldbox(limit: int = 10) -> str:
     """
-    쿠팡 골드박스 (오늘의 특가/할인) 상품을 조회합니다.
+    쿠팡 골드박스 (오늘의 특가/할인) 상품을 조회합니다. 쿠팡 특가, 쿠팡 할인, 쿠팡 세일, 오늘의 딜 요청 시 사용하세요.
 
     Args:
         limit (int): 가져올 결과 개수 (기본 10개, 최대 100개)
