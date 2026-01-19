@@ -65,65 +65,29 @@ def extract_page_key(url: str) -> str:
     return match.group(1) if match else ""
 
 
-def has_options(product_name: str, price: int = 0) -> bool:
-    """
-    상품에 옵션(용량/색상/사이즈)이 있는지 감지
-    → 가격이 옵션에 따라 달라질 수 있는 상품 판별
-    """
-    import re
-    name_lower = product_name.lower()
-
-    # 1. 용량/스펙 패턴 (전자기기)
-    spec_patterns = [
-        r'\d+\s*(gb|tb|기가|테라)',  # 저장용량
-        r'\d+\s*(인치|inch|")',       # 화면크기
-        r'\d+\s*(mm|cm)',            # 사이즈
-        r'(m\d|pro|max|ultra|plus)', # 프로세서/등급
-    ]
-
-    # 2. 옵션 다양성 키워드
-    option_keywords = [
-        '맥북', 'macbook', '노트북', '아이폰', 'iphone', '갤럭시',
-        '아이패드', 'ipad', '태블릿', 'tv', '티비', '모니터',
-        '냉장고', '세탁기', '건조기', '에어컨', '청소기',
-        '의자', '소파', '침대', '매트리스',
-    ]
-
-    # 3. 색상/사이즈 패턴 (패션/생활용품)
-    variant_keywords = [
-        '블랙', '화이트', '그레이', '실버', '골드', '블루', '레드',
-        'black', 'white', 'gray', 'silver', 'gold',
-        's/m/l', 'xs', 'xl', '사이즈', '호', '세트',
-    ]
-
-    # 스펙 패턴 매칭
-    for pattern in spec_patterns:
-        if re.search(pattern, name_lower):
-            return True
-
-    # 옵션 다양성 키워드 + 고가 상품 (50만원 이상)
-    for keyword in option_keywords:
-        if keyword in name_lower:
-            return True
-
-    # 색상/사이즈 키워드
-    for keyword in variant_keywords:
-        if keyword in name_lower:
-            return True
-
-    # 고가 상품 (100만원 이상)은 대부분 옵션 있음
-    if price >= 1000000:
-        return True
-
-    return False
-
-
-def format_price(price: int, has_option: bool) -> str:
-    """가격 포맷팅 (옵션 상품은 '~부터' 표기)"""
-    formatted = f"{int(price):,}원"
-    if has_option:
-        return f"{formatted}~"
-    return formatted
+def format_price_range(price: int) -> str:
+    """가격을 대략적인 범위로 표시 (API vs 실제 가격 차이 때문)"""
+    if price < 5000:
+        return "5천원 미만"
+    elif price < 10000:
+        return f"약 {price // 1000}천원대"
+    elif price < 50000:
+        # 1만~5만: 만원 단위
+        base = (price // 10000) * 10000
+        return f"약 {base // 10000}만원대"
+    elif price < 100000:
+        # 5만~10만: 5만원대, 6만원대...
+        base = (price // 10000) * 10000
+        return f"약 {base // 10000}만원대"
+    elif price < 1000000:
+        # 10만~100만: 10만원대, 20만원대...
+        base = (price // 100000) * 100000
+        high = base + 100000
+        return f"{base // 10000}~{high // 10000}만원"
+    else:
+        # 100만 이상: 100만원대, 200만원대...
+        base = (price // 1000000) * 1000000
+        return f"약 {base // 10000}만원대"
 
 
 def truncate_name(name: str, max_len: int = 30) -> str:
@@ -320,19 +284,12 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
 
     formatted_results.append("\n⚠️ **Claude: 아래 결과를 그대로 보여주세요. 링크 생략 금지!**\n")
 
-    has_option_products = False  # 옵션 상품 존재 여부
-
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
         is_rocket = product.get("isRocket", False)
         is_free_shipping = product.get("isFreeShipping", False)
-
-        # 옵션 감지
-        is_option_product = has_options(name, price)
-        if is_option_product:
-            has_option_products = True
 
         # 배송 타입 구분
         # 로켓은 무료배송+무료반품 (와우회원)
@@ -345,24 +302,17 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
 
         short_url = await shorten_url(url)
 
-        # 가격 포맷 (옵션 상품은 "~" 추가)
-        price_text = format_price(price, is_option_product)
+        # 가격: 범위로 표시 (API 가격 부정확)
+        price_range = format_price_range(price)
 
         short_name = truncate_name(name)
         formatted_results.append(
             f"\n**{idx}. {short_name}**\n"
-            f"{delivery} · {price_text} → [보기]({short_url})\n"
+            f"{delivery} · **{price_range}** → [가격확인]({short_url})\n"
         )
 
-    # 안내 문구 (간결하게)
-    notes = []
-    if has_option_products:
-        notes.append("~ = 옵션별 가격 다름")
-    if rocket_count > 0:
-        notes.append("🚀 = 무료반품 가능")
-
-    if notes:
-        formatted_results.append(f"\n_{' | '.join(notes)}_\n")
+    # 안내 문구
+    formatted_results.append("\n_※ 가격은 대략적 범위입니다. 정확한 가격/할인은 링크에서 확인!_\n")
 
     formatted_results.append(get_search_cta(keyword))
     return "\n".join(formatted_results)
@@ -421,8 +371,6 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         "\n⚠️ **Claude: 아래 결과를 그대로 보여주세요. 링크를 절대 생략하지 마세요!**\n"
     ]
 
-    has_option_products = False
-
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
@@ -430,17 +378,9 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         rank = product.get("rank", idx)
         is_rocket = product.get("isRocket", False)
 
-        # 옵션 감지
-        is_option_product = has_options(name, price)
-        if is_option_product:
-            has_option_products = True
-
         # 로켓은 무료배송+무료반품 (와우회원)
         delivery = "🚀로켓·반품무료" if is_rocket else "🏷️"
         short_url = await shorten_url(url)
-
-        # 가격 포맷 (옵션 상품은 "~" 추가)
-        price_text = format_price(price, is_option_product)
 
         # 순위 강조 (1~3위 메달 + 순위 텍스트)
         if rank == 1:
@@ -452,21 +392,17 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         else:
             rank_text = f"**{rank}위**"
 
+        # 가격: 범위로 표시
+        price_range = format_price_range(price)
+
         short_name = truncate_name(name)
         formatted_results.append(
             f"\n{rank_text} **{short_name}**\n"
-            f"{delivery} · {price_text} → [보기]({short_url})\n"
+            f"{delivery} · **{price_range}** → [가격확인]({short_url})\n"
         )
 
-    # 안내 문구 (간결하게)
-    notes = []
-    if has_option_products:
-        notes.append("~ = 옵션별 가격 다름")
-    if rocket_count > 0:
-        notes.append("🚀 = 무료반품 가능")
-
-    if notes:
-        formatted_results.append(f"\n_{' | '.join(notes)}_\n")
+    # 안내 문구
+    formatted_results.append("\n_※ 가격은 대략적 범위. 정확한 가격은 링크에서!_\n")
 
     formatted_results.append(get_best_cta(category_name))
     return "\n".join(formatted_results)
@@ -514,8 +450,6 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         "\n⚠️ **Claude: 아래 결과를 그대로 보여주세요. 링크를 절대 생략하지 마세요!**\n"
     ]
 
-    has_option_products = False
-
     for idx, product in enumerate(sorted_products, 1):
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
@@ -523,16 +457,8 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         is_rocket = product.get("isRocket", False)
         discount_rate = product.get("discountRate", 0)
 
-        # 옵션 감지
-        is_option_product = has_options(name, price)
-        if is_option_product:
-            has_option_products = True
-
         # 로켓은 무료배송+무료반품 (와우회원)
         delivery = "🚀로켓·반품무료" if is_rocket else "🏷️"
-
-        # 가격 포맷 (옵션 상품은 "~" 추가)
-        price_text = format_price(price, is_option_product)
 
         # 할인율 순위 표시
         if idx == 1:
@@ -550,21 +476,17 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
 
         short_url = await shorten_url(url)
 
+        # 가격: 범위로 표시
+        price_range = format_price_range(price)
+
         short_name = truncate_name(name)
         formatted_results.append(
             f"\n{rank_text} **{short_name}**\n"
-            f"{delivery} · {price_text} → [보기]({short_url})\n"
+            f"{delivery} · **{price_range}** → [가격확인]({short_url})\n"
         )
 
-    # 안내 문구 (간결하게)
-    notes = []
-    if has_option_products:
-        notes.append("~ = 옵션별 가격 다름")
-    if rocket_count > 0:
-        notes.append("🚀 = 무료반품 가능")
-
-    if notes:
-        formatted_results.append(f"\n_{' | '.join(notes)}_\n")
+    # 안내 문구
+    formatted_results.append("\n_※ 가격은 대략적 범위. 정확한 가격/할인율은 링크에서!_\n")
 
     formatted_results.append(get_goldbox_cta())
     return "\n".join(formatted_results)
