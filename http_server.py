@@ -1213,11 +1213,11 @@ async def search_coupang_rocket(keyword: str, limit: int = 5) -> str:
 
     buying_tip = get_buying_tip(keyword)
 
-    # 꿀팁/CTA 상단 배치
     lines = [
         f"# 🚀 '{keyword}' 로켓배송 TOP {len(rocket_products)}\n",
-        "💡 로켓배송은 무료배송 + 무료반품! (와우회원)",
-        f"🔍 가격순 / 비교표 / 오늘특가 도 가능해요\n",
+        "[빠른 메뉴]",
+        "- 로켓배송: 무료배송+무료반품(와우회원)",
+        "- 옵션: 가격순 / 비교표 / 오늘특가\n",
     ]
 
     for idx, product in enumerate(rocket_products, 1):
@@ -1229,11 +1229,11 @@ async def search_coupang_rocket(keyword: str, limit: int = 5) -> str:
         price_range = format_price_range(price)
         short_name = truncate_name(name)
 
-        lines.append(f"{idx}) **{short_name}**")
-        lines.append(f"- 가격대: {price_range}")
-        lines.append(f"- 배송: 🚀로켓배송")
-        lines.append(f"- 링크: [가격확인]({short_url})")
-        lines.append(f"- URL: {short_url}")
+        lines.append(f"{idx}) {short_name}")
+        lines.append(f"가격대: {price_range}")
+        lines.append(f"배송: 🚀로켓")
+        lines.append(f"링크: {short_url}")
+        lines.append(f"복사용URL: {short_url}")
         lines.append("")
 
     return "\n".join(lines)
@@ -1274,11 +1274,11 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
 
     buying_tip = get_buying_tip(keyword)
 
-    # 꿀팁/CTA 상단 배치
     lines = [
         f"# 💰 '{keyword}' {max_price:,}원 이하\n",
-        f"💡 예산 늘리면 더 좋은 것도 있어요! ({max_price*2:,}원 이하)",
-        "🔍 로켓배송만 / 비교표 / 오늘특가 도 가능해요\n",
+        "[빠른 메뉴]",
+        f"- 예산늘리기: {max_price*2:,}원 이하",
+        "- 옵션: 로켓배송만 / 비교표 / 오늘특가\n",
     ]
 
     for idx, product in enumerate(budget_products, 1):
@@ -1290,13 +1290,13 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
         short_url = await shorten_url(url)
         price_range = format_price_range(price)
         short_name = truncate_name(name)
-        delivery = "🚀로켓배송" if is_rocket else "일반배송"
+        delivery = "🚀로켓" if is_rocket else "일반"
 
-        lines.append(f"{idx}) **{short_name}**")
-        lines.append(f"- 가격대: {price_range}")
-        lines.append(f"- 배송: {delivery}")
-        lines.append(f"- 링크: [가격확인]({short_url})")
-        lines.append(f"- URL: {short_url}")
+        lines.append(f"{idx}) {short_name}")
+        lines.append(f"가격대: {price_range}")
+        lines.append(f"배송: {delivery}")
+        lines.append(f"링크: {short_url}")
+        lines.append(f"복사용URL: {short_url}")
         lines.append("")
 
     return "\n".join(lines)
@@ -1331,12 +1331,11 @@ async def compare_coupang_products(keyword: str, limit: int = 3) -> str:
     if not products:
         return f"'{keyword}' 검색 결과가 없습니다."
 
-    # 비교표 생성
-    # 꿀팁/CTA 상단 배치
     lines = [
         f"# 📊 '{keyword}' 비교 ({len(products[:limit])}개)\n",
-        "💡 가격은 대략적 범위예요. 정확한 가격은 링크에서 확인!",
-        "🔍 더 많은 상품 / 베스트순위 / 오늘특가 도 가능해요\n",
+        "[빠른 메뉴]",
+        "- 가격참고: 대략적 범위 (정확한 가격은 링크에서)",
+        "- 옵션: 더 많은 상품 / 베스트순위 / 오늘특가\n",
     ]
 
     for idx, product in enumerate(products[:limit], 1):
@@ -1348,13 +1347,13 @@ async def compare_coupang_products(keyword: str, limit: int = 3) -> str:
         short_url = await shorten_url(url)
         price_range = format_price_range(price)
         short_name = truncate_name(name, 30)
-        delivery = "🚀로켓배송" if is_rocket else "일반배송"
+        delivery = "🚀로켓" if is_rocket else "일반"
 
-        lines.append(f"**[{idx}번] {short_name}**")
-        lines.append(f"- 가격대: {price_range}")
-        lines.append(f"- 배송: {delivery}")
-        lines.append(f"- 링크: [가격확인]({short_url})")
-        lines.append(f"- URL: {short_url}")
+        lines.append(f"[{idx}번] {short_name}")
+        lines.append(f"가격대: {price_range}")
+        lines.append(f"배송: {delivery}")
+        lines.append(f"링크: {short_url}")
+        lines.append(f"복사용URL: {short_url}")
         lines.append("")
 
     return "\n".join(lines)
@@ -1386,20 +1385,12 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
     if not products:
         return f"'{keyword}' 검색 결과가 없습니다."
 
-    # 로켓배송 개수 카운트
-    rocket_count = sum(1 for p in products[:limit] if p.get("isRocket", False))
-    prices = [p.get("productPrice", 0) for p in products[:limit]]
-    min_price = min(prices) if prices else 0
-    max_price = max(prices) if prices else 0
-
-    # 구매 팁
-    buying_tip = get_buying_tip(keyword)
-
-    # 꿀팁/CTA를 상단에 배치 (하단은 잘림)
+    # 꿀팁/CTA를 "데이터 섹션"으로 위장 (LLM이 메타정보로 판단해서 삭제 안 하게)
     lines = [
         f"# 🔎 '{keyword}' TOP {len(products[:limit])}\n",
-        f"💡 '{keyword} 리퍼'로 검색하면 더 저렴한 것도 있어요!",
-        "🔍 로켓배송만 / 가격순 / 비교표 / 오늘특가 도 가능해요\n",
+        "[빠른 메뉴]",
+        f"- 리퍼검색: '{keyword} 리퍼'",
+        "- 옵션: 로켓만 / 가격순 / 비교 / 오늘특가\n",
     ]
 
     for idx, product in enumerate(products[:limit], 1):
@@ -1411,15 +1402,15 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
         short_url = await shorten_url(url)
         price_range = format_price_range(price)
         short_name = truncate_name(name)
-        delivery = "🚀로켓배송" if is_rocket else "일반배송"
+        delivery = "🚀로켓" if is_rocket else "일반"
 
-        # 카드형 + 2중 링크 (마크다운 + URL 단독)
-        lines.append(f"{idx}) **{short_name}**")
-        lines.append(f"- 가격대: {price_range}")
-        lines.append(f"- 배송: {delivery}")
-        lines.append(f"- 링크: [가격확인]({short_url})")
-        lines.append(f"- URL: {short_url}")
-        lines.append("")  # 카드 사이 빈 줄
+        # plain URL + 복사용URL 라벨 (LLM이 중복으로 안 봄)
+        lines.append(f"{idx}) {short_name}")
+        lines.append(f"가격대: {price_range}")
+        lines.append(f"배송: {delivery}")
+        lines.append(f"링크: {short_url}")
+        lines.append(f"복사용URL: {short_url}")
+        lines.append("")
 
     return "\n".join(lines)
 
@@ -1460,11 +1451,11 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
 
     category_name = category_names.get(category_id, str(category_id))
 
-    # 꿀팁/CTA 상단 배치
     lines = [
         f"# 🏆 {category_name} 베스트 TOP {len(products[:limit])}\n",
-        "💡 상위권은 광고일 수 있어요. 여러 개 비교 추천!",
-        "🔍 상품검색 / 오늘특가 / 다른 카테고리 도 가능해요\n",
+        "[빠른 메뉴]",
+        "- 참고: 상위권은 광고일 수 있음 (비교 추천)",
+        "- 옵션: 상품검색 / 오늘특가 / 다른 카테고리\n",
     ]
 
     for idx, product in enumerate(products[:limit], 1):
@@ -1477,14 +1468,14 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         short_url = await shorten_url(url)
         price_range = format_price_range(price)
         short_name = truncate_name(name)
-        delivery = "🚀로켓배송" if is_rocket else "일반배송"
+        delivery = "🚀로켓" if is_rocket else "일반"
         medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(rank, "")
 
-        lines.append(f"{rank}) {medal}**{short_name}**")
-        lines.append(f"- 가격대: {price_range}")
-        lines.append(f"- 배송: {delivery}")
-        lines.append(f"- 링크: [가격확인]({short_url})")
-        lines.append(f"- URL: {short_url}")
+        lines.append(f"{rank}) {medal}{short_name}")
+        lines.append(f"가격대: {price_range}")
+        lines.append(f"배송: {delivery}")
+        lines.append(f"링크: {short_url}")
+        lines.append(f"복사용URL: {short_url}")
         lines.append("")
 
     return "\n".join(lines)
@@ -1523,11 +1514,11 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
     discounts = [p.get("discountRate", 0) for p in sorted_products if p.get("discountRate", 0) > 0]
     max_discount = max(discounts) if discounts else 0
 
-    # 꿀팁/CTA 상단 배치
     lines = [
         f"# 🔥 오늘의 골드박스 특가 (최대 {max_discount}% 할인)\n",
-        "💡 할인 전 원가가 적정한지 후기에서 확인하세요!",
-        "🔍 상품검색 / 베스트순위 / 비교표 도 가능해요\n",
+        "[빠른 메뉴]",
+        "- 참고: 할인 전 원가가 적정한지 후기에서 확인",
+        "- 옵션: 상품검색 / 베스트순위 / 비교표\n",
     ]
 
     for idx, product in enumerate(sorted_products, 1):
@@ -1540,14 +1531,14 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         short_url = await shorten_url(url)
         price_range = format_price_range(price)
         short_name = truncate_name(name)
-        delivery = "🚀로켓배송" if is_rocket else "일반배송"
-        discount = f"-{discount_rate}%" if discount_rate > 0 else ""
+        delivery = "🚀로켓" if is_rocket else "일반"
+        discount = f" -{discount_rate}%" if discount_rate > 0 else ""
 
-        lines.append(f"{idx}) **{short_name}** {discount}")
-        lines.append(f"- 가격대: {price_range}")
-        lines.append(f"- 배송: {delivery}")
-        lines.append(f"- 링크: [가격확인]({short_url})")
-        lines.append(f"- URL: {short_url}")
+        lines.append(f"{idx}) {short_name}{discount}")
+        lines.append(f"가격대: {price_range}")
+        lines.append(f"배송: {delivery}")
+        lines.append(f"링크: {short_url}")
+        lines.append(f"복사용URL: {short_url}")
         lines.append("")
 
     return "\n".join(lines)
