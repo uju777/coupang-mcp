@@ -28,7 +28,7 @@ async def call_api(action: str, params: dict = None) -> dict:
 @mcp.tool()
 async def search_coupang_products(keyword: str, limit: int = 5) -> str:
     """
-    쿠팡에서 상품을 검색합니다.
+    쿠팡에서 상품을 검색합니다. 쿠팡 가격, 쿠팡 최저가, 쿠팡 검색, 쿠팡 쇼핑 요청 시 이 도구를 사용하세요.
 
     Args:
         keyword (str): 검색할 키워드 (예: "에어팟", "맥북프로")
