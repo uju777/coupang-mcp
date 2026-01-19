@@ -35,7 +35,7 @@ def generate_hmac(method: str, url_path: str, datetime: str) -> str:
 
 
 async def get_real_image_url(image_url: str) -> str:
-    """쿠팡 파트너스 이미지 URL을 실제 CDN URL로 변환"""
+    """쿠팡 이미지 URL을 실제 CDN URL로 변환"""
     if not image_url:
         return ""
     try:
