@@ -83,7 +83,7 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
 
         # 이미지 URL을 실제 CDN URL로 변환
         real_image = await get_real_image_url(image) if image else ""
-        image_md = f"![{name[:20]}]({real_image})\n\n" if real_image else ""
+        image_md = ""
 
         formatted_results.append(
             f"### {idx}. {name}\n\n"
@@ -146,7 +146,7 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
 
         rocket_text = " (🚀 로켓배송)" if is_rocket else ""
         real_image = await get_real_image_url(image) if image else ""
-        image_md = f"![{name[:20]}]({real_image})\n\n" if real_image else ""
+        image_md = ""
 
         formatted_results.append(
             f"### {rank}위. {name}\n\n"
@@ -195,7 +195,7 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         rocket_text = " (🚀 로켓배송)" if is_rocket else ""
         discount_text = f" ({discount_rate}% 할인)" if discount_rate else ""
         real_image = await get_real_image_url(image) if image else ""
-        image_md = f"![{name[:20]}]({real_image})\n\n" if real_image else ""
+        image_md = ""
 
         formatted_results.append(
             f"### {idx}. {name}\n\n"
