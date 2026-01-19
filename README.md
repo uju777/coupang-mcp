@@ -137,6 +137,21 @@ Works with Claude Web, Claude Desktop, Claude Code, and Cursor.
 - **Conversational** - Narrow down step by step
 - **Rocket delivery** - 🚀 emoji indicator
 - **Hidden products** - Find items not in app recommendations
+- **Next action suggestions** - Shows what to do next
+
+### Next Action Suggestions
+
+Each search result includes suggested next actions:
+
+```
+---
+**Next actions:**
+| Compare | Popular | Deals |
+|---------|---------|-------|
+| "Compare MacBook prices" | "Show bestsellers" | "Today's deals" |
+
+💡 **Tip**: Filter with "sort by price" or "rocket delivery only"
+```
 
 ### Examples
 
