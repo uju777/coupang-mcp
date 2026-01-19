@@ -117,6 +117,55 @@ def truncate_name(name: str, max_len: int = 30) -> str:
     return name[:max_len-2] + ".."
 
 
+async def get_danawa_price(keyword: str) -> dict:
+    """다나와에서 실제 쿠팡 가격 조회 (쿠팡 API 가격이 부정확해서)"""
+    import re
+
+    try:
+        url = f"https://search.danawa.com/dsearch.php?query={keyword}"
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36"
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers, timeout=5.0)
+            html = response.text
+
+            # 쿠팡 가격 찾기 (쿠팡 와우할인가 우선)
+            # 패턴: 가격 + 원 형태
+            prices = re.findall(r'([\d,]+)\s*원', html)
+
+            # 쿠팡 관련 가격 찾기
+            coupang_section = re.search(r'coupang[^>]*>.*?([\d,]+)\s*원', html, re.IGNORECASE | re.DOTALL)
+
+            if coupang_section:
+                price_str = coupang_section.group(1).replace(',', '')
+                return {"price": int(price_str), "source": "danawa"}
+
+            # 최저가 추출 (첫 번째 합리적인 가격)
+            for price_str in prices:
+                price = int(price_str.replace(',', ''))
+                if 10000 < price < 100000000:  # 1만원 ~ 1억 사이만
+                    return {"price": price, "source": "danawa"}
+
+    except Exception as e:
+        pass
+
+    return {"price": None, "source": None}
+
+
+def format_price(price: int) -> str:
+    """가격을 읽기 좋게 포맷 (정확한 가격용)"""
+    if price >= 10000:
+        man = price // 10000
+        remainder = price % 10000
+        if remainder == 0:
+            return f"{man:,}만원"
+        else:
+            return f"{price:,}원"
+    return f"{price:,}원"
+
+
 # 카테고리별 구매 체크리스트 (팩트 기반, 할루시네이션 X)
 # - 변하지 않는 스펙 항목만
 # - 일반적인 조언만
@@ -1357,8 +1406,13 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
         keyword: 검색 키워드
         limit: 결과 개수 (기본 10)
     """
-    # 더 많이 가져와서 로켓배송만 필터링
-    data = await call_api("search", {"keyword": keyword, "limit": limit * 3})
+    import asyncio
+
+    # 쿠팡 API + 다나와 가격 병렬 조회
+    coupang_task = call_api("search", {"keyword": keyword, "limit": limit * 3})
+    danawa_task = get_danawa_price(keyword)
+
+    data, danawa_result = await asyncio.gather(coupang_task, danawa_task)
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1374,22 +1428,25 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
     if not rocket_products:
         return f"'{keyword}' 로켓배송 상품이 없습니다."
 
-    lines = [f"# {keyword} TOP {len(rocket_products)}\n"]
+    # 다나와 가격 정보 헤더에 추가
+    danawa_price = danawa_result.get("price")
+    if danawa_price:
+        price_info = f"(최저가 약 {format_price(danawa_price)})"
+    else:
+        price_info = ""
+
+    lines = [f"# {keyword} TOP {len(rocket_products)} {price_info}\n"]
 
     for idx, product in enumerate(rocket_products, 1):
         name = product.get("productName", "")
-        price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
 
         short_url = await shorten_url(url)
-        price_range = format_price_range(price)
         short_name = truncate_name(name)
 
         lines.append(f"{idx}) {short_name}")
-        lines.append(f"price: {price_range}")
         lines.append(f"delivery: rocket")
         lines.append(f"link: {short_url}")
-        lines.append(f"alt_search: {keyword} refurb")
         lines.append("")
 
     return "\n".join(lines)
