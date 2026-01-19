@@ -15,7 +15,7 @@ mcp = FastMCP("Coupang")
 
 
 async def get_real_image_url(image_url: str) -> str:
-    """쿠팡 파트너스 이미지 URL을 실제 CDN URL로 변환"""
+    """쿠팡 이미지 URL을 실제 CDN URL로 변환"""
     if not image_url:
         return ""
     try:
@@ -29,14 +29,14 @@ async def get_real_image_url(image_url: str) -> str:
 
 
 def extract_page_key(url: str) -> str:
-    """파트너스 링크에서 pageKey 추출"""
+    """상품 링크에서 pageKey 추출"""
     import re
     match = re.search(r'pageKey=(\d+)', url)
     return match.group(1) if match else ""
 
 
 async def shorten_url(product_url: str) -> str:
-    """상품 URL을 단축 링크로 변환 (수익 유지)"""
+    """상품 URL을 단축 링크로 변환"""
     page_key = extract_page_key(product_url)
     if not page_key:
         return product_url
@@ -62,6 +62,45 @@ async def call_api(action: str, params: dict = None) -> dict:
     async with httpx.AsyncClient() as client:
         response = await client.get(url, timeout=30.0)
         return response.json()
+
+
+def get_search_cta(keyword: str) -> str:
+    """검색 결과 후 CTA"""
+    return f"""
+---
+**다음 행동:**
+| 가격 비교 | 인기 상품 | 특가 확인 |
+|----------|----------|----------|
+| "{keyword} 비교표 만들어줘" | "베스트 상품 보여줘" | "오늘 특가 뭐 있어?" |
+
+💡 **팁**: "가격순 정렬해줘", "로켓배송만" 으로 필터링 가능
+"""
+
+
+def get_best_cta(category_name: str) -> str:
+    """베스트 상품 후 CTA"""
+    return f"""
+---
+**다음 행동:**
+| 특가 확인 | 상품 검색 | 다른 카테고리 |
+|----------|----------|-------------|
+| "골드박스 특가" | "1위 상품 더 검색해줘" | "식품 베스트" |
+
+💡 **팁**: "비교표로 정리해줘" 하면 한눈에 비교 가능
+"""
+
+
+def get_goldbox_cta() -> str:
+    """골드박스 후 CTA"""
+    return """
+---
+**다음 행동:**
+| 상품 검색 | 베스트 확인 | 카테고리별 |
+|----------|-----------|-----------|
+| "관심 상품 검색" | "가전 베스트" | "뷰티 베스트" |
+
+💡 **팁**: 할인율 높은 순으로 보려면 "할인율 순 정렬"
+"""
 
 
 @mcp.tool()
@@ -106,10 +145,10 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
             badges.append("무료배송")
         badge_text = f" ({', '.join(badges)})" if badges else ""
 
-        # URL 단축 (수익 유지)
+        # URL 단축
         short_url = await shorten_url(url)
 
-        # 이미지 클릭 시 수익 링크로 연결
+        # 이미지 클릭 시 상품 페이지로 연결
         image_md = f"[![{name}]({image})]({short_url})\n\n" if image else ""
 
         formatted_results.append(
@@ -119,6 +158,7 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
             f"- [구매하기]({short_url})\n"
         )
 
+    formatted_results.append(get_search_cta(keyword))
     return "\n".join(formatted_results)
 
 
@@ -173,10 +213,10 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
 
         rocket_text = " (🚀 로켓배송)" if is_rocket else ""
 
-        # URL 단축 (수익 유지)
+        # URL 단축
         short_url = await shorten_url(url)
 
-        # 이미지 클릭 시 수익 링크로 연결
+        # 이미지 클릭 시 상품 페이지로 연결
         image_md = f"[![{name}]({image})]({short_url})\n\n" if image else ""
 
         formatted_results.append(
@@ -186,6 +226,7 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
             f"- [구매하기]({short_url})\n"
         )
 
+    formatted_results.append(get_best_cta(category_name))
     return "\n".join(formatted_results)
 
 
@@ -226,10 +267,10 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         rocket_text = " (🚀 로켓배송)" if is_rocket else ""
         discount_text = f" ({discount_rate}% 할인)" if discount_rate else ""
 
-        # URL 단축 (수익 유지)
+        # URL 단축
         short_url = await shorten_url(url)
 
-        # 이미지 클릭 시 수익 링크로 연결
+        # 이미지 클릭 시 상품 페이지로 연결
         image_md = f"[![{name}]({image})]({short_url})\n\n" if image else ""
 
         formatted_results.append(
@@ -239,6 +280,7 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
             f"- [구매하기]({short_url})\n"
         )
 
+    formatted_results.append(get_goldbox_cta())
     return "\n".join(formatted_results)
 
 
