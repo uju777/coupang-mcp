@@ -14,6 +14,20 @@ API_SERVER = os.getenv("COUPANG_API_SERVER", "https://coupang-mcp.netlify.app/.n
 mcp = FastMCP("Coupang")
 
 
+async def get_real_image_url(image_url: str) -> str:
+    """쿠팡 파트너스 이미지 URL을 실제 CDN URL로 변환"""
+    if not image_url:
+        return ""
+    try:
+        async with httpx.AsyncClient(follow_redirects=False) as client:
+            response = await client.head(image_url, timeout=5.0)
+            if response.status_code == 302:
+                return response.headers.get("location", image_url)
+    except:
+        pass
+    return image_url
+
+
 async def call_api(action: str, params: dict = None) -> dict:
     """API 서버 호출"""
     params = params or {}
@@ -56,6 +70,7 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
+        image = product.get("productImage", "")
         is_rocket = product.get("isRocket", False)
         is_free_shipping = product.get("isFreeShipping", False)
 
@@ -66,8 +81,13 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
             badges.append("무료배송")
         badge_text = f" ({', '.join(badges)})" if badges else ""
 
+        # 이미지 URL을 실제 CDN URL로 변환
+        real_image = await get_real_image_url(image) if image else ""
+        image_md = f"![{name[:20]}]({real_image})\n\n" if real_image else ""
+
         formatted_results.append(
-            f"### {idx}. {name}\n"
+            f"### {idx}. {name}\n\n"
+            f"{image_md}"
             f"- **가격**: {int(price):,}원{badge_text}\n"
             f"- **링크**: {url}\n"
         )
@@ -120,13 +140,17 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
+        image = product.get("productImage", "")
         rank = product.get("rank", idx)
         is_rocket = product.get("isRocket", False)
 
         rocket_text = " (로켓배송)" if is_rocket else ""
+        real_image = await get_real_image_url(image) if image else ""
+        image_md = f"![{name[:20]}]({real_image})\n\n" if real_image else ""
 
         formatted_results.append(
-            f"### {rank}위. {name}\n"
+            f"### {rank}위. {name}\n\n"
+            f"{image_md}"
             f"- **가격**: {int(price):,}원{rocket_text}\n"
             f"- **링크**: {url}\n"
         )
@@ -164,14 +188,18 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
+        image = product.get("productImage", "")
         is_rocket = product.get("isRocket", False)
         discount_rate = product.get("discountRate", 0)
 
         rocket_text = " (로켓배송)" if is_rocket else ""
         discount_text = f" ({discount_rate}% 할인)" if discount_rate else ""
+        real_image = await get_real_image_url(image) if image else ""
+        image_md = f"![{name[:20]}]({real_image})\n\n" if real_image else ""
 
         formatted_results.append(
-            f"### {idx}. {name}\n"
+            f"### {idx}. {name}\n\n"
+            f"{image_md}"
             f"- **특가**: {int(price):,}원{discount_text}{rocket_text}\n"
             f"- **링크**: {url}\n"
         )
