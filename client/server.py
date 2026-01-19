@@ -111,7 +111,7 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
         formatted_results.append(
             f"### {idx}. {name}\n\n"
             f"- **가격**: {int(price):,}원{badge_text}\n"
-            f"- **링크**: {short_url}\n"
+            f"- [구매하기]({short_url})\n"
         )
 
     return "\n".join(formatted_results)
@@ -173,7 +173,7 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         formatted_results.append(
             f"### {rank}위. {name}\n\n"
             f"- **가격**: {int(price):,}원{rocket_text}\n"
-            f"- **링크**: {short_url}\n"
+            f"- [구매하기]({short_url})\n"
         )
 
     return "\n".join(formatted_results)
@@ -221,7 +221,7 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         formatted_results.append(
             f"### {idx}. {name}\n\n"
             f"- **특가**: {int(price):,}원{discount_text}{rocket_text}\n"
-            f"- **링크**: {short_url}\n"
+            f"- [구매하기]({short_url})\n"
         )
 
     return "\n".join(formatted_results)
