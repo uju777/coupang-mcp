@@ -9,7 +9,7 @@ from mcp.server.fastmcp import FastMCP
 from urllib.parse import urlencode
 
 # 서버 URL (Netlify 배포 후 수정)
-API_SERVER = os.getenv("COUPANG_API_SERVER", "https://your-site.netlify.app/.netlify/functions/coupang")
+API_SERVER = os.getenv("COUPANG_API_SERVER", "https://coupang-mcp.netlify.app/.netlify/functions/coupang")
 
 mcp = FastMCP("Coupang")
 
