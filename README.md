@@ -1,6 +1,6 @@
 # Coupang MCP
 
-Claude, Cursor, Claude Code에서 쿠팡 상품을 검색하세요. API 키 필요 없음.
+Claude, Cursor, Claude Code에서 쿠팡 상품을 검색하세요. 별도 API 설정 필요 없이 바로 사용.
 
 ## 앱 vs MCP
 
@@ -78,7 +78,7 @@ MCP 설정에 추가:
 
 ## Coupang MCP
 
-Search Coupang products from Claude, Cursor, or Claude Code. No API key required.
+Search Coupang products from Claude, Cursor, or Claude Code. No API setup required.
 
 ### App vs MCP
 
