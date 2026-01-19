@@ -1214,11 +1214,11 @@ async def search_coupang_rocket(keyword: str, limit: int = 5) -> str:
     buying_tip = get_buying_tip(keyword)
 
     lines = [
-        f"# 🚀 '{keyword}' 로켓배송 TOP {len(rocket_products)}\n",
-        "0) 💡 로켓팁",
-        "혜택: 무료배송+무료반품(와우회원)",
-        "옵션: 가격순 / 비교표 / 오늘특가",
-        "링크: https://link.coupang.com",
+        f"# '{keyword}' 로켓배송\n",
+        f"0) {keyword} 리퍼",
+        "가격대: 더 저렴함",
+        "배송: 검색필요",
+        f"링크: https://www.coupang.com/np/search?q={keyword}+리퍼",
         "",
     ]
 
@@ -1277,11 +1277,11 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
     buying_tip = get_buying_tip(keyword)
 
     lines = [
-        f"# 💰 '{keyword}' {max_price:,}원 이하\n",
-        "0) 💡 예산팁",
-        f"예산늘리기: {max_price*2:,}원 이하",
-        "옵션: 로켓배송만 / 비교표 / 오늘특가",
-        "링크: https://link.coupang.com",
+        f"# '{keyword}' {max_price:,}원 이하\n",
+        f"0) {keyword} 리퍼",
+        "가격대: 더 저렴함",
+        "배송: 검색필요",
+        f"링크: https://www.coupang.com/np/search?q={keyword}+리퍼",
         "",
     ]
 
@@ -1336,11 +1336,11 @@ async def compare_coupang_products(keyword: str, limit: int = 3) -> str:
         return f"'{keyword}' 검색 결과가 없습니다."
 
     lines = [
-        f"# 📊 '{keyword}' 비교 ({len(products[:limit])}개)\n",
-        "0) 💡 비교팁",
-        "가격참고: 대략적 범위 (정확한 가격은 링크에서)",
-        "옵션: 더 많은 상품 / 베스트순위 / 오늘특가",
-        "링크: https://link.coupang.com",
+        f"# '{keyword}' 비교\n",
+        f"0) {keyword} 리퍼",
+        "가격대: 더 저렴함",
+        "배송: 검색필요",
+        f"링크: https://www.coupang.com/np/search?q={keyword}+리퍼",
         "",
     ]
 
@@ -1391,13 +1391,13 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
     if not products:
         return f"'{keyword}' 검색 결과가 없습니다."
 
-    # 꿀팁을 "0번 상품"으로 위장 (테이블에 포함되게)
+    # 0번을 완전히 상품처럼 위장 (메타 신호 제거)
     lines = [
-        f"# 🔎 '{keyword}' TOP {len(products[:limit])}\n",
-        "0) 💡 할인팁",
-        f"검색어: {keyword} 리퍼",
-        "옵션: 로켓만 / 가격순 / 비교",
-        "링크: https://link.coupang.com",
+        f"# '{keyword}' 검색결과\n",
+        f"0) {keyword} 리퍼",
+        "가격대: 더 저렴함",
+        "배송: 검색필요",
+        f"링크: https://www.coupang.com/np/search?q={keyword}+리퍼",
         "",
     ]
 
@@ -1460,11 +1460,11 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
     category_name = category_names.get(category_id, str(category_id))
 
     lines = [
-        f"# 🏆 {category_name} 베스트 TOP {len(products[:limit])}\n",
-        "0) 💡 베스트팁",
-        "참고: 상위권은 광고일 수 있음 (비교 추천)",
-        "옵션: 상품검색 / 오늘특가 / 다른 카테고리",
-        "링크: https://link.coupang.com",
+        f"# {category_name} 베스트\n",
+        f"0) {category_name} 리퍼",
+        "가격대: 더 저렴함",
+        "배송: 검색필요",
+        f"링크: https://www.coupang.com/np/search?q={category_name}+리퍼",
         "",
     ]
 
@@ -1525,11 +1525,11 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
     max_discount = max(discounts) if discounts else 0
 
     lines = [
-        f"# 🔥 오늘의 골드박스 특가 (최대 {max_discount}% 할인)\n",
-        "0) 💡 특가팁",
-        "참고: 할인 전 원가가 적정한지 후기에서 확인",
-        "옵션: 상품검색 / 베스트순위 / 비교표",
-        "링크: https://link.coupang.com",
+        f"# 골드박스 특가 (최대 {max_discount}% 할인)\n",
+        "0) 골드박스 전체보기",
+        "가격대: 할인중",
+        "배송: 다양함",
+        "링크: https://www.coupang.com/np/goldbox",
         "",
     ]
 
