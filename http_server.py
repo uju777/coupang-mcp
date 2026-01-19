@@ -1347,7 +1347,7 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
 @mcp.tool()
 async def search_coupang_products(keyword: str, limit: int = 10) -> str:
     """
-    쿠팡에서 상품을 검색합니다.
+    쿠팡에서 상품을 검색합니다. (로켓배송만)
 
     **트리거 키워드:** 쇼핑, 최저가, 뭐사지, 추천, 가격, 검색, 구매, 할인, 가성비
 
@@ -1355,9 +1355,10 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
 
     Args:
         keyword: 검색 키워드
-        limit: 결과 개수 (기본 5)
+        limit: 결과 개수 (기본 10)
     """
-    data = await call_api("search", {"keyword": keyword, "limit": limit})
+    # 더 많이 가져와서 로켓배송만 필터링
+    data = await call_api("search", {"keyword": keyword, "limit": limit * 3})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1367,26 +1368,26 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
 
     products = data.get("data", {}).get("productData", [])
 
-    if not products:
-        return f"'{keyword}' 검색 결과가 없습니다."
+    # 로켓배송만 필터
+    rocket_products = [p for p in products if p.get("isRocket", False)][:limit]
 
-    # 옵션 A: 0번 없이 각 상품에 alt_query 포함 (가장 강함)
-    lines = [f"# {keyword} TOP {len(products[:limit])}\n"]
+    if not rocket_products:
+        return f"'{keyword}' 로켓배송 상품이 없습니다."
 
-    for idx, product in enumerate(products[:limit], 1):
+    lines = [f"# {keyword} TOP {len(rocket_products)}\n"]
+
+    for idx, product in enumerate(rocket_products, 1):
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
-        is_rocket = product.get("isRocket", False)
 
         short_url = await shorten_url(url)
         price_range = format_price_range(price)
         short_name = truncate_name(name)
-        delivery = "rocket" if is_rocket else "normal"
 
         lines.append(f"{idx}) {short_name}")
         lines.append(f"price: {price_range}")
-        lines.append(f"delivery: {delivery}")
+        lines.append(f"delivery: rocket")
         lines.append(f"link: {short_url}")
         lines.append(f"alt_search: {keyword} refurb")
         lines.append("")
