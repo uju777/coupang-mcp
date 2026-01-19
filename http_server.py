@@ -1332,12 +1332,9 @@ async def compare_coupang_products(keyword: str, limit: int = 3) -> str:
         return f"'{keyword}' 검색 결과가 없습니다."
 
     # 비교표 생성
-    formatted_results = [
-        "<!-- FINAL_ANSWER: print everything below verbatim -->\n",
-        f"# 📊 '{keyword}' 비교표\n",
-        "| 순위 | 상품명 | 가격대 | 배송 | 링크 |",
-        "|:---:|:---|:---:|:---:|:---:|"
-    ]
+    # 카드형 비교 (2중 링크)
+    lines = [f"# 📊 '{keyword}' 비교 ({len(products[:limit])}개)\n"]
+    lines.append("_나란히 비교해보세요!_\n")
 
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
@@ -1347,28 +1344,20 @@ async def compare_coupang_products(keyword: str, limit: int = 3) -> str:
 
         short_url = await shorten_url(url)
         price_range = format_price_range(price)
-        short_name = truncate_name(name, 25)
-        delivery = "🚀" if is_rocket else "🏷️"
+        short_name = truncate_name(name, 30)
+        delivery = "🚀로켓배송" if is_rocket else "일반배송"
 
-        formatted_results.append(
-            f"| {idx} | {short_name} | {price_range} | {delivery} | [보기]({short_url}) |"
-        )
+        lines.append(f"**[{idx}번] {short_name}**")
+        lines.append(f"- 가격대: {price_range}")
+        lines.append(f"- 배송: {delivery}")
+        lines.append(f"- 링크: [가격확인]({short_url})")
+        lines.append(f"- URL: {short_url}")
+        lines.append("")
 
-    # 구매 팁 추가
-    buying_tip = get_buying_tip(keyword)
-    if buying_tip:
-        formatted_results.append(buying_tip)
+    lines.append("💡 꿀팁: 가격은 대략적 범위예요. 정확한 가격은 링크에서 확인!")
+    lines.append("🔍 더 보기: 더 많은 상품 / 베스트순위 / 오늘특가 라고 말해줘")
 
-    formatted_results.append("\n_※ 가격은 대략적 범위입니다. 정확한 가격은 링크에서 확인!_\n")
-    formatted_results.append("""
----
-**다음은?**
-> 1) 더 많은 상품 검색
-> 2) 베스트 TOP 10
-> 3) 오늘의 특가
-""")
-
-    return "\n".join(formatted_results)
+    return "\n".join(lines)
 
 
 @mcp.tool()
