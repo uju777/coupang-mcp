@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Gradient definition -->
+  <defs>
+    <linearGradient id="coupangGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#EF5B35"/>
+      <stop offset="100%" style="stop-color:#C43D1A"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Starburst shape (16 points) -->
+  <path d="M256 20
+           L280 90 L340 50 L330 125 L405 105 L365 175 L440 185 L380 235
+           L450 275 L375 300 L420 365 L340 360 L355 435 L285 400 L270 480
+           L230 410 L180 470 L175 390 L100 420 L130 345 L50 340 L110 280
+           L30 245 L100 205 L45 145 L125 140 L95 65 L175 95 L185 20 L240 75 Z"
+        fill="url(#coupangGrad)"/>
+
+  <!-- "쿠" text in white -->
+  <text x="250" y="295"
+        font-family="Apple SD Gothic Neo, Malgun Gothic, sans-serif"
+        font-size="200"
+        font-weight="700"
+        fill="white"
+        text-anchor="middle">쿠</text>
+</svg>
