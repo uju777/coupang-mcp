@@ -96,37 +96,37 @@ async def call_api(action: str, params: dict = None) -> dict:
 
 def get_search_cta(keyword: str) -> str:
     return f"""
----
-**다음 행동:**
-| 가격 비교 | 인기 상품 | 특가 확인 |
-|----------|----------|----------|
-| "{keyword} 비교표 만들어줘" | "베스트 상품 보여줘" | "오늘 특가 뭐 있어?" |
 
-💡 **팁**: "가격순 정렬해줘", "로켓배송만" 으로 필터링 가능
+---
+💬 **이렇게 말해보세요:**
+• "{keyword} 비교표 만들어줘"
+• "베스트 상품 보여줘"
+• "오늘 특가 뭐 있어?"
+• "가격순 정렬해줘"
 """
 
 
 def get_best_cta(category_name: str) -> str:
     return f"""
----
-**다음 행동:**
-| 특가 확인 | 상품 검색 | 다른 카테고리 |
-|----------|----------|-------------|
-| "골드박스 특가" | "1위 상품 더 검색해줘" | "식품 베스트" |
 
-💡 **팁**: "비교표로 정리해줘" 하면 한눈에 비교 가능
+---
+💬 **이렇게 말해보세요:**
+• "골드박스 특가 보여줘"
+• "1위 상품 더 자세히"
+• "다른 카테고리 베스트"
+• "비교표로 정리해줘"
 """
 
 
 def get_goldbox_cta() -> str:
     return """
----
-**다음 행동:**
-| 상품 검색 | 베스트 확인 | 카테고리별 |
-|----------|-----------|-----------|
-| "관심 상품 검색" | "가전 베스트" | "뷰티 베스트" |
 
-💡 **팁**: 할인율 높은 순으로 보려면 "할인율 순 정렬"
+---
+💬 **이렇게 말해보세요:**
+• "관심있는 상품 검색해줘"
+• "가전 베스트 보여줘"
+• "할인율 높은 순으로"
+• "비교표 만들어줘"
 """
 
 
@@ -173,13 +173,11 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
         badge_text = f" ({', '.join(badges)})" if badges else ""
 
         short_url = await shorten_url(url)
-        image_md = f"[![{name}]({image})]({short_url})\n\n" if image else ""
 
         formatted_results.append(
-            f"### {idx}. {name}\n\n"
-            f"{image_md}"
-            f"- **가격**: {int(price):,}원{badge_text}\n"
-            f"- [구매하기]({short_url})\n"
+            f"**{idx}. {name}**\n"
+            f"   💰 {int(price):,}원{badge_text}\n"
+            f"   🔗 [구매하기]({short_url})\n"
         )
 
     formatted_results.append(get_search_cta(keyword))
@@ -230,15 +228,13 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         rank = product.get("rank", idx)
         is_rocket = product.get("isRocket", False)
 
-        rocket_text = " (🚀 로켓배송)" if is_rocket else ""
+        rocket_text = " 🚀" if is_rocket else ""
         short_url = await shorten_url(url)
-        image_md = f"[![{name}]({image})]({short_url})\n\n" if image else ""
 
         formatted_results.append(
-            f"### {rank}위. {name}\n\n"
-            f"{image_md}"
-            f"- **가격**: {int(price):,}원{rocket_text}\n"
-            f"- [구매하기]({short_url})\n"
+            f"**{rank}위. {name}**{rocket_text}\n"
+            f"   💰 {int(price):,}원\n"
+            f"   🔗 [구매하기]({short_url})\n"
         )
 
     formatted_results.append(get_best_cta(category_name))
@@ -279,16 +275,14 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         is_rocket = product.get("isRocket", False)
         discount_rate = product.get("discountRate", 0)
 
-        rocket_text = " (🚀 로켓배송)" if is_rocket else ""
-        discount_text = f" ({discount_rate}% 할인)" if discount_rate else ""
+        rocket_text = " 🚀" if is_rocket else ""
+        discount_text = f" ({discount_rate}% OFF)" if discount_rate else ""
         short_url = await shorten_url(url)
-        image_md = f"[![{name}]({image})]({short_url})\n\n" if image else ""
 
         formatted_results.append(
-            f"### {idx}. {name}\n\n"
-            f"{image_md}"
-            f"- **특가**: {int(price):,}원{discount_text}{rocket_text}\n"
-            f"- [구매하기]({short_url})\n"
+            f"**{idx}. {name}**{rocket_text}\n"
+            f"   🔥 {int(price):,}원{discount_text}\n"
+            f"   🔗 [구매하기]({short_url})\n"
         )
 
     formatted_results.append(get_goldbox_cta())
