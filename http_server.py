@@ -96,37 +96,42 @@ async def call_api(action: str, params: dict = None) -> dict:
 
 def get_search_cta(keyword: str) -> str:
     return f"""
-
 ---
-💬 **이렇게 말해보세요:**
-• "{keyword} 비교표 만들어줘"
-• "베스트 상품 보여줘"
-• "오늘 특가 뭐 있어?"
-• "가격순 정렬해줘"
+**💡 꿀팁:** `{keyword} 리퍼/B급/전시` → 30~70% 저렴 | 🚀로켓=빠른교환 | 🏷️판매자=가격↓
+
+**🎯 다음 뭐 할까요? (번호로 답해주세요)**
+1️⃣ **가격순** 정렬
+2️⃣ **100g당 가격** 계산
+3️⃣ **비교표**로 정리
+4️⃣ `{keyword} 리퍼` 검색
 """
 
 
 def get_best_cta(category_name: str) -> str:
     return f"""
-
 ---
-💬 **이렇게 말해보세요:**
-• "골드박스 특가 보여줘"
-• "1위 상품 더 자세히"
-• "다른 카테고리 베스트"
-• "비교표로 정리해줘"
+**💡 꿀팁:** 1~3위 광고 가능성↑ → 4~10위도 체크! | 같은상품 판매자별 가격 다름
+
+**🎯 다음 뭐 할까요? (번호로 답해주세요)**
+1️⃣ **1위 상품** 상세검색
+2️⃣ **다른 카테고리** 베스트
+3️⃣ **골드박스** 특가
+4️⃣ **10개 더** 보기
 """
 
 
 def get_goldbox_cta() -> str:
     return """
-
 ---
-💬 **이렇게 말해보세요:**
-• "관심있는 상품 검색해줘"
-• "가전 베스트 보여줘"
-• "할인율 높은 순으로"
-• "비교표 만들어줘"
+**💡 꿀팁:**
+- 골드박스 = **한정수량** (품절 빠름!)
+- 할인율 50%↑ = 원가 뻥튀기 의심 → 네이버 가격비교 추천
+
+**🎯 다음 뭐 할까요? (번호로 답해주세요)**
+1️⃣ 관심상품 **상세검색**
+2️⃣ **카테고리별** 베스트
+3️⃣ **가격순** 정렬
+4️⃣ **비교표**로 정리
 """
 
 
@@ -135,12 +140,18 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
     """
     쿠팡에서 상품을 검색합니다.
 
+    ⚠️ 사용자가 추상적으로 요청하면 (예: "에어팟 찾아줘") 바로 검색하지 말고,
+    먼저 아래 질문을 해주세요:
+    "✅ 쿠팡에서 '{keyword}' 찾는 거 맞지? 아래 중 번호로 골라줘:
+    1) 최저가 위주 2) 로켓배송만 3) 리뷰많은순 4) 선물용
+    예산도 알려주면 더 정확해!"
+
     Args:
-        keyword (str): 검색할 키워드 (예: "에어팟", "맥북프로")
-        limit (int): 가져올 결과 개수 (기본 5개, 최대 100개)
+        keyword (str): 검색할 키워드 (예: "에어팟 프로2", "맥북프로 14인치")
+        limit (int): 결과 개수 (기본 5개)
 
     Returns:
-        상품 목록 (이름, 가격, 구매 링크 포함)
+        TOP 5 상품 + 다음 행동 선택지
     """
     data = await call_api("search", {"keyword": keyword, "limit": limit})
 
@@ -155,29 +166,39 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
     if not products:
         return f"'{keyword}' 검색 결과가 없습니다."
 
-    formatted_results = [f"## '{keyword}' 검색 결과\n"]
+    # 로켓배송 개수 카운트
+    rocket_count = sum(1 for p in products[:limit] if p.get("isRocket", False))
+    prices = [p.get("productPrice", 0) for p in products[:limit]]
+    min_price = min(prices) if prices else 0
+    max_price = max(prices) if prices else 0
+
+    # 1줄 요약
+    formatted_results = [
+        f"# 🔍 '{keyword}' TOP {len(products[:limit])}\n",
+        f"> 💰 {int(min_price):,}원 ~ {int(max_price):,}원 | 🚀로켓 {rocket_count}개\n"
+    ]
 
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
-        image = product.get("productImage", "")
         is_rocket = product.get("isRocket", False)
         is_free_shipping = product.get("isFreeShipping", False)
 
-        badges = []
+        # 배송 타입 구분
         if is_rocket:
-            badges.append("🚀 로켓배송")
+            delivery = "🚀"
+        else:
+            delivery = "🏷️"
+
         if is_free_shipping:
-            badges.append("무료배송")
-        badge_text = f" ({', '.join(badges)})" if badges else ""
+            delivery += "무배"
 
         short_url = await shorten_url(url)
 
         formatted_results.append(
-            f"**{idx}. {name}**\n"
-            f"   💰 {int(price):,}원{badge_text}\n"
-            f"   🔗 [구매하기]({short_url})\n"
+            f"**{idx}) {name}** {delivery}\n"
+            f"💰 {int(price):,}원 → [이미지/리뷰 보기]({short_url})\n"
         )
 
     formatted_results.append(get_search_cta(keyword))
@@ -189,12 +210,12 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
     """
     쿠팡 카테고리별 베스트 상품을 조회합니다.
 
-    Args:
-        category_id (int): 카테고리 ID (1016: 가전디지털, 1001: 여성패션, 1012: 식품 등)
-        limit (int): 가져올 결과 개수 (기본 5개, 최대 100개)
+    ⚠️ 카테고리를 모르면 먼저 물어보세요:
+    "어떤 카테고리 베스트 볼까? 1)가전 2)식품 3)패션 4)뷰티"
 
-    Returns:
-        베스트 상품 목록
+    Args:
+        category_id: 1016=가전, 1012=식품, 1001=여성패션, 1002=남성패션, 1010=뷰티, 1024=건강식품
+        limit: 결과 개수 (기본 5개)
     """
     category_names = {
         1001: "여성패션", 1002: "남성패션", 1010: "뷰티",
@@ -218,23 +239,30 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         return f"카테고리 {category_id} 베스트 상품이 없습니다."
 
     category_name = category_names.get(category_id, str(category_id))
-    formatted_results = [f"## [{category_name}] 베스트 상품\n"]
+
+    # 가격 범위 계산
+    prices = [p.get("productPrice", 0) for p in products[:limit]]
+    rocket_count = sum(1 for p in products[:limit] if p.get("isRocket", False))
+
+    formatted_results = [
+        f"# 🏆 [{category_name}] 베스트 TOP {len(products[:limit])}\n",
+        f"> 💰 {int(min(prices)):,}원 ~ {int(max(prices)):,}원 | 🚀로켓 {rocket_count}개\n"
+    ]
 
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
-        image = product.get("productImage", "")
         rank = product.get("rank", idx)
         is_rocket = product.get("isRocket", False)
 
-        rocket_text = " 🚀" if is_rocket else ""
+        delivery = "🚀" if is_rocket else "🏷️"
         short_url = await shorten_url(url)
+        medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(rank, f"{rank})")
 
         formatted_results.append(
-            f"**{rank}위. {name}**{rocket_text}\n"
-            f"   💰 {int(price):,}원\n"
-            f"   🔗 [구매하기]({short_url})\n"
+            f"**{medal} {name}** {delivery}\n"
+            f"💰 {int(price):,}원 → [이미지/리뷰 보기]({short_url})\n"
         )
 
     formatted_results.append(get_best_cta(category_name))
@@ -245,12 +273,10 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
 async def get_coupang_goldbox(limit: int = 10) -> str:
     """
     쿠팡 골드박스 (오늘의 특가/할인) 상품을 조회합니다.
+    한정수량 특가라 품절이 빠릅니다!
 
     Args:
-        limit (int): 가져올 결과 개수 (기본 10개, 최대 100개)
-
-    Returns:
-        골드박스 특가 상품 목록
+        limit: 결과 개수 (기본 10개)
     """
     data = await call_api("goldbox", {"limit": limit})
 
@@ -265,24 +291,39 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
     if not products:
         return "골드박스 상품이 없습니다."
 
-    formatted_results = ["## 골드박스 특가 상품\n"]
+    # 통계 계산
+    prices = [p.get("productPrice", 0) for p in products[:limit]]
+    discounts = [p.get("discountRate", 0) for p in products[:limit] if p.get("discountRate", 0) > 0]
+    avg_discount = sum(discounts) // len(discounts) if discounts else 0
+    rocket_count = sum(1 for p in products[:limit] if p.get("isRocket", False))
+
+    formatted_results = [
+        f"# 🔥 골드박스 특가 TOP {len(products[:limit])}\n",
+        f"> 💰 {int(min(prices)):,}원 ~ {int(max(prices)):,}원 | 평균 -{avg_discount}% | 🚀로켓 {rocket_count}개\n"
+    ]
 
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
-        image = product.get("productImage", "")
         is_rocket = product.get("isRocket", False)
         discount_rate = product.get("discountRate", 0)
 
-        rocket_text = " 🚀" if is_rocket else ""
-        discount_text = f" ({discount_rate}% OFF)" if discount_rate else ""
+        delivery = "🚀" if is_rocket else "🏷️"
+
+        # 할인율 표시 (30% 이상이면 핫딜 강조)
+        if discount_rate >= 30:
+            discount_text = f" 🔥-{discount_rate}%"
+        elif discount_rate > 0:
+            discount_text = f" -{discount_rate}%"
+        else:
+            discount_text = ""
+
         short_url = await shorten_url(url)
 
         formatted_results.append(
-            f"**{idx}. {name}**{rocket_text}\n"
-            f"   🔥 {int(price):,}원{discount_text}\n"
-            f"   🔗 [구매하기]({short_url})\n"
+            f"**{idx}) {name}** {delivery}{discount_text}\n"
+            f"💰 {int(price):,}원 → [이미지/리뷰 보기]({short_url})\n"
         )
 
     formatted_results.append(get_goldbox_cta())
