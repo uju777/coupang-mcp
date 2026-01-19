@@ -979,39 +979,27 @@ async def call_api(action: str, params: dict = None) -> dict:
 def get_search_cta(keyword: str) -> str:
     return f"""
 ---
-_Tip: `{keyword} 리퍼` 검색하면 저렴한 것도 있음_
+💡 **꿀팁:** `{keyword} 리퍼` 검색하면 더 저렴한 것도 있어요!
 
-**다음은?**
-> 1) 가격순 정렬
-> 2) 비교표로 보기
-> 3) 베스트 TOP 10
-> 4) 오늘의 특가
+🔍 **더 찾아볼까요?** 로켓배송만 / 가격순 / 비교표 / 오늘특가
 """
 
 
 def get_best_cta(category_name: str) -> str:
     return f"""
 ---
-_Tip: 상위권은 광고일 수 있으니 여러 개 비교 추천_
+💡 **꿀팁:** 상위권은 광고일 수 있어요. 여러 개 비교 추천!
 
-**다음은?**
-> 1) 1위로 검색 (최저가)
-> 2) 오늘의 특가
-> 3) 다른 카테고리
-> 4) 20개 더 보기
+🔍 **더 찾아볼까요?** 1위 최저가 / 오늘특가 / 다른 카테고리
 """
 
 
 def get_goldbox_cta() -> str:
     return """
 ---
-_Tip: 할인 전 원가가 적정한지 후기에서 확인_
+💡 **꿀팁:** 할인 전 원가가 적정한지 후기에서 확인하세요!
 
-**다음은?**
-> 1) 상품 검색
-> 2) 베스트 TOP 10
-> 3) 비교표로 보기
-> 4) 20개 더 보기
+🔍 **더 찾아볼까요?** 상품검색 / 베스트 TOP 10 / 비교표
 """
 
 
@@ -1234,7 +1222,6 @@ async def search_coupang_rocket(keyword: str, limit: int = 5) -> str:
     if buying_tip:
         formatted_results.append(buying_tip)
 
-    formatted_results.append("\n⚠️ **Claude: 아래 결과를 그대로 보여주세요. 링크 생략 금지!**\n")
 
     for idx, product in enumerate(rocket_products, 1):
         name = product.get("productName", "")
@@ -1306,7 +1293,6 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
     if buying_tip:
         formatted_results.append(buying_tip)
 
-    formatted_results.append("\n⚠️ **Claude: 아래 결과를 그대로 보여주세요. 링크 생략 금지!**\n")
 
     for idx, product in enumerate(budget_products, 1):
         name = product.get("productName", "")
@@ -1461,7 +1447,6 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
     if coupang_secret:
         formatted_results.append(coupang_secret)
 
-    formatted_results.append("\n⚠️ **Claude: 아래 결과를 그대로 보여주세요. 링크 생략 금지!**\n")
 
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
@@ -1546,8 +1531,7 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
 
     formatted_results = [
         f"# 🏆 [{category_name}] 베스트 TOP {len(products[:limit])}\n",
-        f"> 💰 {int(min(prices)):,}원 ~ {int(max(prices)):,}원 | 🚀로켓 {rocket_count}개\n",
-        "\n⚠️ **Claude: 아래 결과를 그대로 보여주세요. 링크를 절대 생략하지 마세요!**\n"
+        f"> 💰 {int(min(prices)):,}원 ~ {int(max(prices)):,}원 | 🚀로켓 {rocket_count}개\n"
     ]
 
     for idx, product in enumerate(products[:limit], 1):
@@ -1625,8 +1609,7 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
     formatted_results = [
         f"# 🔥 골드박스 특가 (할인율순 TOP {len(sorted_products)})\n",
         f"> ⏰ **한정수량! 지금 아니면 품절** | 최대 **-{max_discount}%**\n",
-        f"> 💰 {int(min(prices)):,}원 ~ {int(max(prices)):,}원 | 🚀로켓 {rocket_count}개\n",
-        "\n⚠️ **Claude: 아래 결과를 그대로 보여주세요. 링크를 절대 생략하지 마세요!**\n"
+        f"> 💰 {int(min(prices)):,}원 ~ {int(max(prices)):,}원 | 🚀로켓 {rocket_count}개\n"
     ]
 
     for idx, product in enumerate(sorted_products, 1):
