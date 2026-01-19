@@ -1,13 +1,20 @@
 # 쿠팡 MCP
 
-**API 키 없이 바로 사용.** Claude, Cursor, Claude Code에서 쿠팡 상품을 검색하세요.
+Claude, Cursor, Claude Code에서 쿠팡 상품을 검색하세요. API 키 필요 없음.
+
+## 이런 점이 좋아요
+
+- **최저가 비교** - 가격순으로 한눈에
+- **로켓배송 표시** - 🚀 이모지로 바로 구분
+- **중고상품도 검색** - 앱에서 잘 안 뜨는 상품들도 나옴
+- **골드박스 특가** - 매일 앱 안 열어도 바로 확인
 
 ## 기능
 
 - **상품 검색** - 키워드로 쿠팡 상품 검색
 - **베스트 상품** - 카테고리별 인기 상품 조회
 - **골드박스** - 오늘의 특가/할인 상품
-- **링크 단축** - 쿠팡 URL을 짧은 링크로 변환
+- **링크 단축** - 긴 URL을 짧게
 
 ## 설치
 
@@ -56,14 +63,14 @@ MCP 설정에 추가:
 
 ## Coupang MCP
 
-**No API Key Required.** Search Coupang products directly from Claude, Cursor, or Claude Code.
+Search Coupang products from Claude, Cursor, or Claude Code. No API key required.
 
-### Features
+### Why use this?
 
-- **Product Search** - Search Coupang products by keyword
-- **Best Sellers** - Get best selling products by category
-- **Gold Box** - Today's deals and discounts
-- **Deep Link** - Convert Coupang URLs to short links
+- **Price comparison** - See prices at a glance
+- **Rocket delivery** - 🚀 emoji shows fast shipping
+- **Hidden products** - Find items not shown in the app
+- **Gold Box deals** - Check daily deals instantly
 
 ### Usage
 
@@ -76,7 +83,7 @@ Just ask:
 
 ---
 
-MCP, Model Context Protocol, Coupang, 쿠팡, Shopping, Korea, E-commerce, Claude, Cursor, Claude Code, AI Assistant
+MCP, Model Context Protocol, Coupang, 쿠팡, 최저가, 로켓배송, Claude, Cursor, Claude Code
 
 ## License
 
