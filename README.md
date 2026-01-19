@@ -1,4 +1,4 @@
-# 쿠팡 MCP
+# Coupang MCP
 
 Claude, Cursor, Claude Code에서 쿠팡 상품을 검색하세요. API 키 필요 없음.
 
