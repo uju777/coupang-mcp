@@ -1,8 +1,8 @@
 # Coupang MCP
 
-**No API Key Required!** Search Coupang products directly from Claude, Cursor, or Claude Code.
+**No API Key Required.** Search Coupang products directly from Claude, Cursor, or Claude Code.
 
-**API 키 없이 바로 사용!** Claude, Cursor, Claude Code에서 쿠팡 상품을 검색하세요.
+**API 키 없이 바로 사용.** Claude, Cursor, Claude Code에서 쿠팡 상품을 검색하세요.
 
 ## Features
 
