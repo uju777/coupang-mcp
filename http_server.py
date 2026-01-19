@@ -65,6 +65,67 @@ def extract_page_key(url: str) -> str:
     return match.group(1) if match else ""
 
 
+def has_options(product_name: str, price: int = 0) -> bool:
+    """
+    상품에 옵션(용량/색상/사이즈)이 있는지 감지
+    → 가격이 옵션에 따라 달라질 수 있는 상품 판별
+    """
+    import re
+    name_lower = product_name.lower()
+
+    # 1. 용량/스펙 패턴 (전자기기)
+    spec_patterns = [
+        r'\d+\s*(gb|tb|기가|테라)',  # 저장용량
+        r'\d+\s*(인치|inch|")',       # 화면크기
+        r'\d+\s*(mm|cm)',            # 사이즈
+        r'(m\d|pro|max|ultra|plus)', # 프로세서/등급
+    ]
+
+    # 2. 옵션 다양성 키워드
+    option_keywords = [
+        '맥북', 'macbook', '노트북', '아이폰', 'iphone', '갤럭시',
+        '아이패드', 'ipad', '태블릿', 'tv', '티비', '모니터',
+        '냉장고', '세탁기', '건조기', '에어컨', '청소기',
+        '의자', '소파', '침대', '매트리스',
+    ]
+
+    # 3. 색상/사이즈 패턴 (패션/생활용품)
+    variant_keywords = [
+        '블랙', '화이트', '그레이', '실버', '골드', '블루', '레드',
+        'black', 'white', 'gray', 'silver', 'gold',
+        's/m/l', 'xs', 'xl', '사이즈', '호', '세트',
+    ]
+
+    # 스펙 패턴 매칭
+    for pattern in spec_patterns:
+        if re.search(pattern, name_lower):
+            return True
+
+    # 옵션 다양성 키워드 + 고가 상품 (50만원 이상)
+    for keyword in option_keywords:
+        if keyword in name_lower:
+            return True
+
+    # 색상/사이즈 키워드
+    for keyword in variant_keywords:
+        if keyword in name_lower:
+            return True
+
+    # 고가 상품 (100만원 이상)은 대부분 옵션 있음
+    if price >= 1000000:
+        return True
+
+    return False
+
+
+def format_price(price: int, has_option: bool) -> str:
+    """가격 포맷팅 (옵션 상품은 '~부터' 표기)"""
+    formatted = f"{int(price):,}원"
+    if has_option:
+        return f"{formatted}~"
+    return formatted
+
+
 async def shorten_url(product_url: str) -> str:
     """상품 URL을 단축 링크로 변환"""
     page_key = extract_page_key(product_url)
@@ -190,12 +251,19 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
         "\n⚠️ **Claude: 아래 결과를 그대로 보여주세요. 링크를 절대 생략하지 마세요!**\n"
     ]
 
+    has_option_products = False  # 옵션 상품 존재 여부
+
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
         is_rocket = product.get("isRocket", False)
         is_free_shipping = product.get("isFreeShipping", False)
+
+        # 옵션 감지
+        is_option_product = has_options(name, price)
+        if is_option_product:
+            has_option_products = True
 
         # 배송 타입 구분
         # 로켓은 기본 무배, 판매자만 무배 여부 표시
@@ -208,10 +276,17 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
 
         short_url = await shorten_url(url)
 
+        # 가격 포맷 (옵션 상품은 "~" 추가)
+        price_text = format_price(price, is_option_product)
+
         formatted_results.append(
             f"**{idx}) {name}** {delivery}\n"
-            f"💰 {int(price):,}원 → [이미지/리뷰 보기]({short_url})\n"
+            f"💰 {price_text} → [이미지/리뷰 보기]({short_url})\n"
         )
+
+    # 옵션 상품이 있으면 안내 추가
+    if has_option_products:
+        formatted_results.append("\n> 💡 **~표시 = 옵션별 가격 다름** (색상/용량/사이즈 선택 시 변동)\n")
 
     formatted_results.append(get_search_cta(keyword))
     return "\n".join(formatted_results)
@@ -271,6 +346,8 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         "\n⚠️ **Claude: 아래 결과를 그대로 보여주세요. 링크를 절대 생략하지 마세요!**\n"
     ]
 
+    has_option_products = False
+
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
@@ -278,8 +355,16 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         rank = product.get("rank", idx)
         is_rocket = product.get("isRocket", False)
 
+        # 옵션 감지
+        is_option_product = has_options(name, price)
+        if is_option_product:
+            has_option_products = True
+
         delivery = "🚀로켓" if is_rocket else "🏷️"
         short_url = await shorten_url(url)
+
+        # 가격 포맷 (옵션 상품은 "~" 추가)
+        price_text = format_price(price, is_option_product)
 
         # 순위 강조 (1~3위 메달 + 순위 텍스트)
         if rank == 1:
@@ -293,8 +378,12 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
 
         formatted_results.append(
             f"{rank_text} {name} {delivery}\n"
-            f"└ 💰 {int(price):,}원 → [이미지/리뷰 보기]({short_url})\n"
+            f"└ 💰 {price_text} → [이미지/리뷰 보기]({short_url})\n"
         )
+
+    # 옵션 상품이 있으면 안내 추가
+    if has_option_products:
+        formatted_results.append("\n> 💡 **~표시 = 옵션별 가격 다름** (색상/용량/사이즈 선택 시 변동)\n")
 
     formatted_results.append(get_best_cta(category_name))
     return "\n".join(formatted_results)
@@ -341,6 +430,8 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         "\n⚠️ **Claude: 아래 결과를 그대로 보여주세요. 링크를 절대 생략하지 마세요!**\n"
     ]
 
+    has_option_products = False
+
     for idx, product in enumerate(sorted_products, 1):
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
@@ -348,7 +439,15 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         is_rocket = product.get("isRocket", False)
         discount_rate = product.get("discountRate", 0)
 
+        # 옵션 감지
+        is_option_product = has_options(name, price)
+        if is_option_product:
+            has_option_products = True
+
         delivery = "🚀로켓" if is_rocket else "🏷️"
+
+        # 가격 포맷 (옵션 상품은 "~" 추가)
+        price_text = format_price(price, is_option_product)
 
         # 할인율 순위 표시
         if idx == 1:
@@ -368,8 +467,12 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
 
         formatted_results.append(
             f"{rank_text} {name} {delivery}\n"
-            f"└ 💰 {int(price):,}원 → [이미지/리뷰 보기]({short_url})\n"
+            f"└ 💰 {price_text} → [이미지/리뷰 보기]({short_url})\n"
         )
+
+    # 옵션 상품이 있으면 안내 추가
+    if has_option_products:
+        formatted_results.append("\n> 💡 **~표시 = 옵션별 가격 다름** (색상/용량/사이즈 선택 시 변동)\n")
 
     formatted_results.append(get_goldbox_cta())
     return "\n".join(formatted_results)
