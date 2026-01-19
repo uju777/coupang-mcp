@@ -1,6 +1,8 @@
 # Coupang MCP
 
-Claude Code에서 쿠팡 상품을 검색할 수 있는 MCP입니다. 별도 API 설정 없이 바로 사용할 수 있습니다.
+Claude에서 쿠팡 상품을 검색할 수 있는 MCP입니다. 별도 API 설정 없이 바로 사용할 수 있습니다.
+
+Claude Web, Claude Desktop, Claude Code 모두 지원합니다.
 
 ## 특징
 
@@ -92,7 +94,9 @@ MCP 설정에 추가:
 
 ## Coupang MCP
 
-MCP for searching Coupang products from Claude Code. No API setup required.
+MCP for searching Coupang products from Claude. No API setup required.
+
+Works with Claude Web, Claude Desktop, and Claude Code.
 
 ### Features
 
