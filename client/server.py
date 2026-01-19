@@ -95,6 +95,7 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
+        image = product.get("productImage", "")
         is_rocket = product.get("isRocket", False)
         is_free_shipping = product.get("isFreeShipping", False)
 
@@ -108,8 +109,12 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
         # URL 단축 (수익 유지)
         short_url = await shorten_url(url)
 
+        # 이미지 클릭 시 수익 링크로 연결
+        image_md = f"[![{name}]({image})]({short_url})\n\n" if image else ""
+
         formatted_results.append(
             f"### {idx}. {name}\n\n"
+            f"{image_md}"
             f"- **가격**: {int(price):,}원{badge_text}\n"
             f"- [구매하기]({short_url})\n"
         )
@@ -162,6 +167,7 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
+        image = product.get("productImage", "")
         rank = product.get("rank", idx)
         is_rocket = product.get("isRocket", False)
 
@@ -170,8 +176,12 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         # URL 단축 (수익 유지)
         short_url = await shorten_url(url)
 
+        # 이미지 클릭 시 수익 링크로 연결
+        image_md = f"[![{name}]({image})]({short_url})\n\n" if image else ""
+
         formatted_results.append(
             f"### {rank}위. {name}\n\n"
+            f"{image_md}"
             f"- **가격**: {int(price):,}원{rocket_text}\n"
             f"- [구매하기]({short_url})\n"
         )
@@ -209,6 +219,7 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         name = product.get("productName", "")
         price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
+        image = product.get("productImage", "")
         is_rocket = product.get("isRocket", False)
         discount_rate = product.get("discountRate", 0)
 
@@ -218,8 +229,12 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         # URL 단축 (수익 유지)
         short_url = await shorten_url(url)
 
+        # 이미지 클릭 시 수익 링크로 연결
+        image_md = f"[![{name}]({image})]({short_url})\n\n" if image else ""
+
         formatted_results.append(
             f"### {idx}. {name}\n\n"
+            f"{image_md}"
             f"- **특가**: {int(price):,}원{discount_text}{rocket_text}\n"
             f"- [구매하기]({short_url})\n"
         )
