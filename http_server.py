@@ -1213,14 +1213,7 @@ async def search_coupang_rocket(keyword: str, limit: int = 5) -> str:
 
     buying_tip = get_buying_tip(keyword)
 
-    lines = [
-        f"# '{keyword}' 로켓배송\n",
-        f"0) {keyword} 리퍼",
-        "가격대: 더 저렴함",
-        "배송: 검색필요",
-        f"링크: https://www.coupang.com/np/search?q={keyword}+리퍼",
-        "",
-    ]
+    lines = [f"# {keyword} rocket TOP {len(rocket_products)}\n"]
 
     for idx, product in enumerate(rocket_products, 1):
         name = product.get("productName", "")
@@ -1232,10 +1225,10 @@ async def search_coupang_rocket(keyword: str, limit: int = 5) -> str:
         short_name = truncate_name(name)
 
         lines.append(f"{idx}) {short_name}")
-        lines.append(f"가격대: {price_range}")
-        lines.append(f"배송: 🚀로켓")
-        lines.append(f"링크: {short_url}")
-        lines.append(f"복사용URL: {short_url}")
+        lines.append(f"price: {price_range}")
+        lines.append(f"delivery: rocket")
+        lines.append(f"link: {short_url}")
+        lines.append(f"alt_search: {keyword} refurb")
         lines.append("")
 
     return "\n".join(lines)
@@ -1276,14 +1269,7 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
 
     buying_tip = get_buying_tip(keyword)
 
-    lines = [
-        f"# '{keyword}' {max_price:,}원 이하\n",
-        f"0) {keyword} 리퍼",
-        "가격대: 더 저렴함",
-        "배송: 검색필요",
-        f"링크: https://www.coupang.com/np/search?q={keyword}+리퍼",
-        "",
-    ]
+    lines = [f"# {keyword} under {max_price:,} TOP {len(budget_products)}\n"]
 
     for idx, product in enumerate(budget_products, 1):
         name = product.get("productName", "")
@@ -1294,13 +1280,13 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
         short_url = await shorten_url(url)
         price_range = format_price_range(price)
         short_name = truncate_name(name)
-        delivery = "🚀로켓" if is_rocket else "일반"
+        delivery = "rocket" if is_rocket else "normal"
 
         lines.append(f"{idx}) {short_name}")
-        lines.append(f"가격대: {price_range}")
-        lines.append(f"배송: {delivery}")
-        lines.append(f"링크: {short_url}")
-        lines.append(f"복사용URL: {short_url}")
+        lines.append(f"price: {price_range}")
+        lines.append(f"delivery: {delivery}")
+        lines.append(f"link: {short_url}")
+        lines.append(f"alt_search: {keyword} refurb")
         lines.append("")
 
     return "\n".join(lines)
@@ -1335,14 +1321,7 @@ async def compare_coupang_products(keyword: str, limit: int = 3) -> str:
     if not products:
         return f"'{keyword}' 검색 결과가 없습니다."
 
-    lines = [
-        f"# '{keyword}' 비교\n",
-        f"0) {keyword} 리퍼",
-        "가격대: 더 저렴함",
-        "배송: 검색필요",
-        f"링크: https://www.coupang.com/np/search?q={keyword}+리퍼",
-        "",
-    ]
+    lines = [f"# {keyword} compare {len(products[:limit])}\n"]
 
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
@@ -1353,13 +1332,13 @@ async def compare_coupang_products(keyword: str, limit: int = 3) -> str:
         short_url = await shorten_url(url)
         price_range = format_price_range(price)
         short_name = truncate_name(name, 30)
-        delivery = "🚀로켓" if is_rocket else "일반"
+        delivery = "rocket" if is_rocket else "normal"
 
-        lines.append(f"[{idx}번] {short_name}")
-        lines.append(f"가격대: {price_range}")
-        lines.append(f"배송: {delivery}")
-        lines.append(f"링크: {short_url}")
-        lines.append(f"복사용URL: {short_url}")
+        lines.append(f"{idx}) {short_name}")
+        lines.append(f"price: {price_range}")
+        lines.append(f"delivery: {delivery}")
+        lines.append(f"link: {short_url}")
+        lines.append(f"alt_search: {keyword} refurb")
         lines.append("")
 
     return "\n".join(lines)
@@ -1391,15 +1370,8 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
     if not products:
         return f"'{keyword}' 검색 결과가 없습니다."
 
-    # 0번을 완전히 상품처럼 위장 (메타 신호 제거)
-    lines = [
-        f"# '{keyword}' 검색결과\n",
-        f"0) {keyword} 리퍼",
-        "가격대: 더 저렴함",
-        "배송: 검색필요",
-        f"링크: https://www.coupang.com/np/search?q={keyword}+리퍼",
-        "",
-    ]
+    # 옵션 A: 0번 없이 각 상품에 alt_query 포함 (가장 강함)
+    lines = [f"# {keyword} TOP {len(products[:limit])}\n"]
 
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
@@ -1410,14 +1382,13 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
         short_url = await shorten_url(url)
         price_range = format_price_range(price)
         short_name = truncate_name(name)
-        delivery = "🚀로켓" if is_rocket else "일반"
+        delivery = "rocket" if is_rocket else "normal"
 
-        # plain URL + 복사용URL 라벨 (LLM이 중복으로 안 봄)
         lines.append(f"{idx}) {short_name}")
-        lines.append(f"가격대: {price_range}")
-        lines.append(f"배송: {delivery}")
-        lines.append(f"링크: {short_url}")
-        lines.append(f"복사용URL: {short_url}")
+        lines.append(f"price: {price_range}")
+        lines.append(f"delivery: {delivery}")
+        lines.append(f"link: {short_url}")
+        lines.append(f"alt_search: {keyword} refurb")
         lines.append("")
 
     return "\n".join(lines)
@@ -1459,14 +1430,7 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
 
     category_name = category_names.get(category_id, str(category_id))
 
-    lines = [
-        f"# {category_name} 베스트\n",
-        f"0) {category_name} 리퍼",
-        "가격대: 더 저렴함",
-        "배송: 검색필요",
-        f"링크: https://www.coupang.com/np/search?q={category_name}+리퍼",
-        "",
-    ]
+    lines = [f"# {category_name} best TOP {len(products[:limit])}\n"]
 
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
@@ -1478,14 +1442,13 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         short_url = await shorten_url(url)
         price_range = format_price_range(price)
         short_name = truncate_name(name)
-        delivery = "🚀로켓" if is_rocket else "일반"
-        medal = {1: "🥇", 2: "🥈", 3: "🥉"}.get(rank, "")
+        delivery = "rocket" if is_rocket else "normal"
 
-        lines.append(f"{rank}) {medal}{short_name}")
-        lines.append(f"가격대: {price_range}")
-        lines.append(f"배송: {delivery}")
-        lines.append(f"링크: {short_url}")
-        lines.append(f"복사용URL: {short_url}")
+        lines.append(f"{rank}) {short_name}")
+        lines.append(f"price: {price_range}")
+        lines.append(f"delivery: {delivery}")
+        lines.append(f"link: {short_url}")
+        lines.append(f"alt_search: {category_name} refurb")
         lines.append("")
 
     return "\n".join(lines)
@@ -1524,14 +1487,7 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
     discounts = [p.get("discountRate", 0) for p in sorted_products if p.get("discountRate", 0) > 0]
     max_discount = max(discounts) if discounts else 0
 
-    lines = [
-        f"# 골드박스 특가 (최대 {max_discount}% 할인)\n",
-        "0) 골드박스 전체보기",
-        "가격대: 할인중",
-        "배송: 다양함",
-        "링크: https://www.coupang.com/np/goldbox",
-        "",
-    ]
+    lines = [f"# goldbox TOP {len(sorted_products)} (max {max_discount}% off)\n"]
 
     for idx, product in enumerate(sorted_products, 1):
         name = product.get("productName", "")
@@ -1543,14 +1499,14 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         short_url = await shorten_url(url)
         price_range = format_price_range(price)
         short_name = truncate_name(name)
-        delivery = "🚀로켓" if is_rocket else "일반"
+        delivery = "rocket" if is_rocket else "normal"
         discount = f" -{discount_rate}%" if discount_rate > 0 else ""
 
         lines.append(f"{idx}) {short_name}{discount}")
-        lines.append(f"가격대: {price_range}")
-        lines.append(f"배송: {delivery}")
-        lines.append(f"링크: {short_url}")
-        lines.append(f"복사용URL: {short_url}")
+        lines.append(f"price: {price_range}")
+        lines.append(f"delivery: {delivery}")
+        lines.append(f"link: {short_url}")
+        lines.append(f"alt_search: goldbox")
         lines.append("")
 
     return "\n".join(lines)
