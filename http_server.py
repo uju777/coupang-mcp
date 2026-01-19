@@ -289,7 +289,7 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
     if has_option_products:
         notes.append("**~표시** = 옵션별 가격 다름")
     if rocket_count > 0:
-        notes.append("**🚀로켓** = 와우회원 무료배송+30일 무료반품")
+        notes.append("**🚀로켓** = 와우회원 무료배송,30일 무료반품")
 
     if notes:
         formatted_results.append(f"\n> 💡 {' | '.join(notes)}\n")
@@ -393,7 +393,7 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
     if has_option_products:
         notes.append("**~표시** = 옵션별 가격 다름")
     if rocket_count > 0:
-        notes.append("**🚀로켓** = 와우회원 무료배송+30일 무료반품")
+        notes.append("**🚀로켓** = 와우회원 무료배송,30일 무료반품")
 
     if notes:
         formatted_results.append(f"\n> 💡 {' | '.join(notes)}\n")
@@ -489,7 +489,7 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
     if has_option_products:
         notes.append("**~표시** = 옵션별 가격 다름")
     if rocket_count > 0:
-        notes.append("**🚀로켓** = 와우회원 무료배송+30일 무료반품")
+        notes.append("**🚀로켓** = 와우회원 무료배송,30일 무료반품")
 
     if notes:
         formatted_results.append(f"\n> 💡 {' | '.join(notes)}\n")
