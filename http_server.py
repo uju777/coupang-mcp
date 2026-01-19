@@ -1213,9 +1213,12 @@ async def search_coupang_rocket(keyword: str, limit: int = 5) -> str:
 
     buying_tip = get_buying_tip(keyword)
 
-    # 카드형 리스트 + 2중 링크
-    lines = [f"# 🚀 '{keyword}' 로켓배송 TOP {len(rocket_products)}\n"]
-    lines.append("_모두 무료배송 + 무료반품 (와우회원)_\n")
+    # 꿀팁/CTA 상단 배치
+    lines = [
+        f"# 🚀 '{keyword}' 로켓배송 TOP {len(rocket_products)}\n",
+        "💡 로켓배송은 무료배송 + 무료반품! (와우회원)",
+        f"🔍 가격순 / 비교표 / 오늘특가 도 가능해요\n",
+    ]
 
     for idx, product in enumerate(rocket_products, 1):
         name = product.get("productName", "")
@@ -1232,9 +1235,6 @@ async def search_coupang_rocket(keyword: str, limit: int = 5) -> str:
         lines.append(f"- 링크: [가격확인]({short_url})")
         lines.append(f"- URL: {short_url}")
         lines.append("")
-
-    lines.append(f"💡 꿀팁: '{keyword} 리퍼'로 검색하면 더 저렴한 것도 있어요.")
-    lines.append("🔍 더 보기: 가격순 / 비교표 / 오늘특가 라고 말해줘")
 
     return "\n".join(lines)
 
@@ -1274,9 +1274,12 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
 
     buying_tip = get_buying_tip(keyword)
 
-    # 카드형 리스트 + 2중 링크
-    lines = [f"# 💰 '{keyword}' {max_price:,}원 이하\n"]
-    lines.append("_가격 낮은 순으로 정렬_\n")
+    # 꿀팁/CTA 상단 배치
+    lines = [
+        f"# 💰 '{keyword}' {max_price:,}원 이하\n",
+        f"💡 예산 늘리면 더 좋은 것도 있어요! ({max_price*2:,}원 이하)",
+        "🔍 로켓배송만 / 비교표 / 오늘특가 도 가능해요\n",
+    ]
 
     for idx, product in enumerate(budget_products, 1):
         name = product.get("productName", "")
@@ -1295,9 +1298,6 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
         lines.append(f"- 링크: [가격확인]({short_url})")
         lines.append(f"- URL: {short_url}")
         lines.append("")
-
-    lines.append(f"💡 꿀팁: 예산 늘리면 더 좋은 것도 있어요! ({max_price*2:,}원 이하)")
-    lines.append("🔍 더 보기: 로켓배송만 / 비교표 / 오늘특가 라고 말해줘")
 
     return "\n".join(lines)
 
@@ -1332,9 +1332,12 @@ async def compare_coupang_products(keyword: str, limit: int = 3) -> str:
         return f"'{keyword}' 검색 결과가 없습니다."
 
     # 비교표 생성
-    # 카드형 비교 (2중 링크)
-    lines = [f"# 📊 '{keyword}' 비교 ({len(products[:limit])}개)\n"]
-    lines.append("_나란히 비교해보세요!_\n")
+    # 꿀팁/CTA 상단 배치
+    lines = [
+        f"# 📊 '{keyword}' 비교 ({len(products[:limit])}개)\n",
+        "💡 가격은 대략적 범위예요. 정확한 가격은 링크에서 확인!",
+        "🔍 더 많은 상품 / 베스트순위 / 오늘특가 도 가능해요\n",
+    ]
 
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
@@ -1353,9 +1356,6 @@ async def compare_coupang_products(keyword: str, limit: int = 3) -> str:
         lines.append(f"- 링크: [가격확인]({short_url})")
         lines.append(f"- URL: {short_url}")
         lines.append("")
-
-    lines.append("💡 꿀팁: 가격은 대략적 범위예요. 정확한 가격은 링크에서 확인!")
-    lines.append("🔍 더 보기: 더 많은 상품 / 베스트순위 / 오늘특가 라고 말해줘")
 
     return "\n".join(lines)
 
@@ -1395,8 +1395,12 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
     # 구매 팁
     buying_tip = get_buying_tip(keyword)
 
-    # 카드형 리스트 (LLM 변형에 강함)
-    lines = [f"# 🔎 '{keyword}' TOP {len(products[:limit])}\n"]
+    # 꿀팁/CTA를 상단에 배치 (하단은 잘림)
+    lines = [
+        f"# 🔎 '{keyword}' TOP {len(products[:limit])}\n",
+        f"💡 '{keyword} 리퍼'로 검색하면 더 저렴한 것도 있어요!",
+        "🔍 로켓배송만 / 가격순 / 비교표 / 오늘특가 도 가능해요\n",
+    ]
 
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
@@ -1416,9 +1420,6 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
         lines.append(f"- 링크: [가격확인]({short_url})")
         lines.append(f"- URL: {short_url}")
         lines.append("")  # 카드 사이 빈 줄
-
-    lines.append(f"💡 꿀팁: '{keyword} 리퍼'로 검색하면 더 저렴한 것도 있어요.")
-    lines.append("🔍 더 보기: 로켓배송만 / 가격순 / 비교표 / 오늘특가 라고 말해줘")
 
     return "\n".join(lines)
 
@@ -1459,9 +1460,12 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
 
     category_name = category_names.get(category_id, str(category_id))
 
-    # 카드형 리스트 + 2중 링크
-    lines = [f"# 🏆 {category_name} 베스트 TOP {len(products[:limit])}\n"]
-    lines.append("_실시간 인기 상품!_\n")
+    # 꿀팁/CTA 상단 배치
+    lines = [
+        f"# 🏆 {category_name} 베스트 TOP {len(products[:limit])}\n",
+        "💡 상위권은 광고일 수 있어요. 여러 개 비교 추천!",
+        "🔍 상품검색 / 오늘특가 / 다른 카테고리 도 가능해요\n",
+    ]
 
     for idx, product in enumerate(products[:limit], 1):
         name = product.get("productName", "")
@@ -1482,9 +1486,6 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         lines.append(f"- 링크: [가격확인]({short_url})")
         lines.append(f"- URL: {short_url}")
         lines.append("")
-
-    lines.append("💡 꿀팁: 상위권은 광고일 수 있어요. 여러 개 비교 추천!")
-    lines.append("🔍 더 보기: 상품검색 / 오늘특가 / 다른 카테고리 라고 말해줘")
 
     return "\n".join(lines)
 
@@ -1522,9 +1523,12 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
     discounts = [p.get("discountRate", 0) for p in sorted_products if p.get("discountRate", 0) > 0]
     max_discount = max(discounts) if discounts else 0
 
-    # 카드형 리스트 + 2중 링크
-    lines = [f"# 🔥 오늘의 골드박스 특가 (최대 {max_discount}% 할인)\n"]
-    lines.append("_⏰ 한정수량! 빨리 품절돼요_\n")
+    # 꿀팁/CTA 상단 배치
+    lines = [
+        f"# 🔥 오늘의 골드박스 특가 (최대 {max_discount}% 할인)\n",
+        "💡 할인 전 원가가 적정한지 후기에서 확인하세요!",
+        "🔍 상품검색 / 베스트순위 / 비교표 도 가능해요\n",
+    ]
 
     for idx, product in enumerate(sorted_products, 1):
         name = product.get("productName", "")
@@ -1545,9 +1549,6 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         lines.append(f"- 링크: [가격확인]({short_url})")
         lines.append(f"- URL: {short_url}")
         lines.append("")
-
-    lines.append("💡 꿀팁: 할인 전 원가가 적정한지 후기에서 확인하세요!")
-    lines.append("🔍 더 보기: 상품검색 / 베스트순위 / 비교표 라고 말해줘")
 
     return "\n".join(lines)
 
