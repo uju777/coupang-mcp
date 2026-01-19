@@ -1215,9 +1215,11 @@ async def search_coupang_rocket(keyword: str, limit: int = 5) -> str:
 
     lines = [
         f"# 🚀 '{keyword}' 로켓배송 TOP {len(rocket_products)}\n",
-        "[빠른 메뉴]",
-        "- 로켓배송: 무료배송+무료반품(와우회원)",
-        "- 옵션: 가격순 / 비교표 / 오늘특가\n",
+        "0) 💡 로켓팁",
+        "혜택: 무료배송+무료반품(와우회원)",
+        "옵션: 가격순 / 비교표 / 오늘특가",
+        "링크: https://link.coupang.com",
+        "",
     ]
 
     for idx, product in enumerate(rocket_products, 1):
@@ -1276,9 +1278,11 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
 
     lines = [
         f"# 💰 '{keyword}' {max_price:,}원 이하\n",
-        "[빠른 메뉴]",
-        f"- 예산늘리기: {max_price*2:,}원 이하",
-        "- 옵션: 로켓배송만 / 비교표 / 오늘특가\n",
+        "0) 💡 예산팁",
+        f"예산늘리기: {max_price*2:,}원 이하",
+        "옵션: 로켓배송만 / 비교표 / 오늘특가",
+        "링크: https://link.coupang.com",
+        "",
     ]
 
     for idx, product in enumerate(budget_products, 1):
@@ -1333,9 +1337,11 @@ async def compare_coupang_products(keyword: str, limit: int = 3) -> str:
 
     lines = [
         f"# 📊 '{keyword}' 비교 ({len(products[:limit])}개)\n",
-        "[빠른 메뉴]",
-        "- 가격참고: 대략적 범위 (정확한 가격은 링크에서)",
-        "- 옵션: 더 많은 상품 / 베스트순위 / 오늘특가\n",
+        "0) 💡 비교팁",
+        "가격참고: 대략적 범위 (정확한 가격은 링크에서)",
+        "옵션: 더 많은 상품 / 베스트순위 / 오늘특가",
+        "링크: https://link.coupang.com",
+        "",
     ]
 
     for idx, product in enumerate(products[:limit], 1):
@@ -1385,12 +1391,14 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
     if not products:
         return f"'{keyword}' 검색 결과가 없습니다."
 
-    # 꿀팁/CTA를 "데이터 섹션"으로 위장 (LLM이 메타정보로 판단해서 삭제 안 하게)
+    # 꿀팁을 "0번 상품"으로 위장 (테이블에 포함되게)
     lines = [
         f"# 🔎 '{keyword}' TOP {len(products[:limit])}\n",
-        "[빠른 메뉴]",
-        f"- 리퍼검색: '{keyword} 리퍼'",
-        "- 옵션: 로켓만 / 가격순 / 비교 / 오늘특가\n",
+        "0) 💡 할인팁",
+        f"검색어: {keyword} 리퍼",
+        "옵션: 로켓만 / 가격순 / 비교",
+        "링크: https://link.coupang.com",
+        "",
     ]
 
     for idx, product in enumerate(products[:limit], 1):
@@ -1453,9 +1461,11 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
 
     lines = [
         f"# 🏆 {category_name} 베스트 TOP {len(products[:limit])}\n",
-        "[빠른 메뉴]",
-        "- 참고: 상위권은 광고일 수 있음 (비교 추천)",
-        "- 옵션: 상품검색 / 오늘특가 / 다른 카테고리\n",
+        "0) 💡 베스트팁",
+        "참고: 상위권은 광고일 수 있음 (비교 추천)",
+        "옵션: 상품검색 / 오늘특가 / 다른 카테고리",
+        "링크: https://link.coupang.com",
+        "",
     ]
 
     for idx, product in enumerate(products[:limit], 1):
@@ -1516,9 +1526,11 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
 
     lines = [
         f"# 🔥 오늘의 골드박스 특가 (최대 {max_discount}% 할인)\n",
-        "[빠른 메뉴]",
-        "- 참고: 할인 전 원가가 적정한지 후기에서 확인",
-        "- 옵션: 상품검색 / 베스트순위 / 비교표\n",
+        "0) 💡 특가팁",
+        "참고: 할인 전 원가가 적정한지 후기에서 확인",
+        "옵션: 상품검색 / 베스트순위 / 비교표",
+        "링크: https://link.coupang.com",
+        "",
     ]
 
     for idx, product in enumerate(sorted_products, 1):
