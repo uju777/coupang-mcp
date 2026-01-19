@@ -76,7 +76,7 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
 
         badges = []
         if is_rocket:
-            badges.append("로켓배송")
+            badges.append("🚀 로켓배송")
         if is_free_shipping:
             badges.append("무료배송")
         badge_text = f" ({', '.join(badges)})" if badges else ""
@@ -144,7 +144,7 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         rank = product.get("rank", idx)
         is_rocket = product.get("isRocket", False)
 
-        rocket_text = " (로켓배송)" if is_rocket else ""
+        rocket_text = " (🚀 로켓배송)" if is_rocket else ""
         real_image = await get_real_image_url(image) if image else ""
         image_md = f"![{name[:20]}]({real_image})\n\n" if real_image else ""
 
@@ -192,7 +192,7 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         is_rocket = product.get("isRocket", False)
         discount_rate = product.get("discountRate", 0)
 
-        rocket_text = " (로켓배송)" if is_rocket else ""
+        rocket_text = " (🚀 로켓배송)" if is_rocket else ""
         discount_text = f" ({discount_rate}% 할인)" if discount_rate else ""
         real_image = await get_real_image_url(image) if image else ""
         image_md = f"![{name[:20]}]({real_image})\n\n" if real_image else ""
