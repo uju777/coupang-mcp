@@ -1,0 +1,10 @@
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties: {}
+  commandFunction: |-
+    (config) => ({
+      command: "uv",
+      args: ["run", "--with", "mcp[cli]", "--with", "httpx", "python", "client/server.py"]
+    })
