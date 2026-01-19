@@ -1182,7 +1182,7 @@ async def get_coupang_seasonal(season: str = "") -> str:
 
 
 @mcp.tool()
-async def search_coupang_rocket(keyword: str, limit: int = 5) -> str:
+async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
     """
     로켓배송 상품만 검색합니다.
 
@@ -1235,7 +1235,7 @@ async def search_coupang_rocket(keyword: str, limit: int = 5) -> str:
 
 
 @mcp.tool()
-async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int = 5) -> str:
+async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int = 10) -> str:
     """
     가격대별 상품 검색.
 
@@ -1293,7 +1293,7 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
 
 
 @mcp.tool()
-async def compare_coupang_products(keyword: str, limit: int = 3) -> str:
+async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
     """
     쿠팡 상품을 비교표로 보여줍니다.
 
@@ -1345,7 +1345,7 @@ async def compare_coupang_products(keyword: str, limit: int = 3) -> str:
 
 
 @mcp.tool()
-async def search_coupang_products(keyword: str, limit: int = 5) -> str:
+async def search_coupang_products(keyword: str, limit: int = 10) -> str:
     """
     쿠팡에서 상품을 검색합니다.
 
@@ -1395,7 +1395,7 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
 
 
 @mcp.tool()
-async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> str:
+async def get_coupang_best_products(category_id: int = 1016, limit: int = 10) -> str:
     """
     쿠팡 카테고리별 베스트 상품 조회.
 
