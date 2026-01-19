@@ -34,6 +34,20 @@ def generate_hmac(method: str, url_path: str, datetime: str) -> str:
     return signature
 
 
+async def get_real_image_url(image_url: str) -> str:
+    """쿠팡 파트너스 이미지 URL을 실제 CDN URL로 변환"""
+    if not image_url:
+        return ""
+    try:
+        async with httpx.AsyncClient(follow_redirects=False) as client:
+            response = await client.head(image_url, timeout=5.0)
+            if response.status_code == 302:
+                return response.headers.get("location", image_url)
+    except:
+        pass
+    return image_url
+
+
 def get_authorization_header(method: str, path: str, query_string: str = "") -> dict:
     """인증 헤더 생성"""
     # GMT 시간 사용: yymmddTHHmmssZ 형식
@@ -102,8 +116,9 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
                 shipping_badge = "📦 무료배송" if is_free_shipping else ""
                 badges = " ".join(filter(None, [rocket_badge, shipping_badge]))
 
-                # 이미지 마크다운 (있으면 표시)
-                image_md = f"![{name[:20]}]({image})\n\n" if image else ""
+                # 이미지 URL을 실제 CDN URL로 변환
+                real_image = await get_real_image_url(image) if image else ""
+                image_md = f"![{name[:20]}]({real_image})\n\n" if real_image else ""
 
                 formatted_results.append(
                     f"### {idx}. {name}\n\n"
@@ -196,7 +211,8 @@ async def get_coupang_best_products(category_id: int = 1001, limit: int = 5) -> 
                 is_rocket = product.get("isRocket", False)
 
                 rocket_badge = "🚀 로켓배송" if is_rocket else ""
-                image_md = f"![{name[:20]}]({image})\n\n" if image else ""
+                real_image = await get_real_image_url(image) if image else ""
+                image_md = f"![{name[:20]}]({real_image})\n\n" if real_image else ""
 
                 formatted_results.append(
                     f"### {rank}위. {name}\n\n"
@@ -302,7 +318,8 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
 
                 rocket_badge = "🚀 로켓배송" if is_rocket else ""
                 discount_text = f"({discount_rate}% 할인)" if discount_rate else ""
-                image_md = f"![{name[:20]}]({image})\n\n" if image else ""
+                real_image = await get_real_image_url(image) if image else ""
+                image_md = f"![{name[:20]}]({real_image})\n\n" if real_image else ""
 
                 formatted_results.append(
                     f"### {idx}. {name}\n\n"
