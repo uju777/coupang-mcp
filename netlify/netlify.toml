@@ -1,0 +1,15 @@
+[build]
+  functions = "functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+# Python runtime
+[functions.coupang]
+  runtime = "python3.9"
+
+# Redirects for cleaner URLs
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/coupang"
+  status = 200
