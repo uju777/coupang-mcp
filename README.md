@@ -133,4 +133,4 @@ Use with [Naver Search MCP](https://github.com/uju777/mcp-server-naver-search) f
 
 ## License
 
-MIT
+MIT © [uju777](https://github.com/uju777)
