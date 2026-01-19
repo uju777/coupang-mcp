@@ -266,13 +266,13 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
             has_option_products = True
 
         # 배송 타입 구분
-        # 로켓은 기본 무배, 판매자만 무배 여부 표시
+        # 로켓은 무료배송+무료반품 (와우회원)
         if is_rocket:
-            delivery = "🚀로켓"
+            delivery = "🚀로켓·반품무료"
         elif is_free_shipping:
             delivery = "🏷️무배"
         else:
-            delivery = "🏷️유배"  # 유료배송
+            delivery = "🏷️유배"
 
         short_url = await shorten_url(url)
 
@@ -284,9 +284,15 @@ async def search_coupang_products(keyword: str, limit: int = 5) -> str:
             f"💰 {price_text} → [이미지/리뷰 보기]({short_url})\n"
         )
 
-    # 옵션 상품이 있으면 안내 추가
+    # 안내 문구
+    notes = []
     if has_option_products:
-        formatted_results.append("\n> 💡 **~표시 = 옵션별 가격 다름** (색상/용량/사이즈 선택 시 변동)\n")
+        notes.append("**~표시** = 옵션별 가격 다름")
+    if rocket_count > 0:
+        notes.append("**🚀로켓** = 와우회원 무료배송+30일 무료반품")
+
+    if notes:
+        formatted_results.append(f"\n> 💡 {' | '.join(notes)}\n")
 
     formatted_results.append(get_search_cta(keyword))
     return "\n".join(formatted_results)
@@ -360,7 +366,8 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
         if is_option_product:
             has_option_products = True
 
-        delivery = "🚀로켓" if is_rocket else "🏷️"
+        # 로켓은 무료배송+무료반품 (와우회원)
+        delivery = "🚀로켓·반품무료" if is_rocket else "🏷️"
         short_url = await shorten_url(url)
 
         # 가격 포맷 (옵션 상품은 "~" 추가)
@@ -381,9 +388,15 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 5) -> 
             f"└ 💰 {price_text} → [이미지/리뷰 보기]({short_url})\n"
         )
 
-    # 옵션 상품이 있으면 안내 추가
+    # 안내 문구
+    notes = []
     if has_option_products:
-        formatted_results.append("\n> 💡 **~표시 = 옵션별 가격 다름** (색상/용량/사이즈 선택 시 변동)\n")
+        notes.append("**~표시** = 옵션별 가격 다름")
+    if rocket_count > 0:
+        notes.append("**🚀로켓** = 와우회원 무료배송+30일 무료반품")
+
+    if notes:
+        formatted_results.append(f"\n> 💡 {' | '.join(notes)}\n")
 
     formatted_results.append(get_best_cta(category_name))
     return "\n".join(formatted_results)
@@ -444,7 +457,8 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         if is_option_product:
             has_option_products = True
 
-        delivery = "🚀로켓" if is_rocket else "🏷️"
+        # 로켓은 무료배송+무료반품 (와우회원)
+        delivery = "🚀로켓·반품무료" if is_rocket else "🏷️"
 
         # 가격 포맷 (옵션 상품은 "~" 추가)
         price_text = format_price(price, is_option_product)
@@ -470,9 +484,15 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
             f"└ 💰 {price_text} → [이미지/리뷰 보기]({short_url})\n"
         )
 
-    # 옵션 상품이 있으면 안내 추가
+    # 안내 문구
+    notes = []
     if has_option_products:
-        formatted_results.append("\n> 💡 **~표시 = 옵션별 가격 다름** (색상/용량/사이즈 선택 시 변동)\n")
+        notes.append("**~표시** = 옵션별 가격 다름")
+    if rocket_count > 0:
+        notes.append("**🚀로켓** = 와우회원 무료배송+30일 무료반품")
+
+    if notes:
+        formatted_results.append(f"\n> 💡 {' | '.join(notes)}\n")
 
     formatted_results.append(get_goldbox_cta())
     return "\n".join(formatted_results)
