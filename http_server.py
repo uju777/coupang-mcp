@@ -118,7 +118,11 @@ def truncate_name(name: str, max_len: int = 30) -> str:
 
 
 async def get_danawa_price(keyword: str) -> dict:
-    """다나와에서 실제 쿠팡 가격 조회 (쿠팡 API 가격이 부정확해서)"""
+    """다나와에서 실제 가격 조회 (쿠팡 API 가격이 부정확해서)
+
+    첫 번째 검색 결과(메인 상품)의 가격을 추출하여
+    액세서리/케이스 등 관련 상품 가격이 아닌 실제 상품 가격을 반환
+    """
     import re
     from urllib.parse import quote
 
@@ -126,7 +130,7 @@ async def get_danawa_price(keyword: str) -> dict:
         encoded_keyword = quote(keyword)
         url = f"https://search.danawa.com/dsearch.php?query={encoded_keyword}"
         headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
             "Accept": "text/html,application/xhtml+xml",
             "Accept-Language": "ko-KR,ko;q=0.9"
         }
@@ -135,56 +139,44 @@ async def get_danawa_price(keyword: str) -> dict:
             response = await client.get(url, headers=headers, timeout=8.0, follow_redirects=True)
             html = response.text
 
-            coupang_prices = []
+            # 방법 1: prod_main_info 클래스 내 가격 (첫 번째 메인 상품)
+            main_info = re.search(
+                r'class="prod_main_info".*?<p class="price_sect"[^>]*>.*?([\d,]{5,12})\s*원',
+                html, re.DOTALL
+            )
+            if main_info:
+                price = int(main_info.group(1).replace(',', ''))
+                if 10000 < price < 50000000:
+                    return {"price": price, "source": "danawa_main"}
 
-            # 패턴 1: 쿠팡 와우회원가 (가장 정확)
-            wow_patterns = [
-                r'와우회원가[^\d]*([\d,]+)',
-                r'와우할인가[^\d]*([\d,]+)',
-                r'쿠팡\s*와우[^\d]*([\d,]+)',
-            ]
-            for pattern in wow_patterns:
-                matches = re.findall(pattern, html)
-                for m in matches:
-                    price = int(m.replace(',', ''))
-                    if 5000 < price < 50000000:
-                        coupang_prices.append(price)
+            # 방법 2: prod_pricelist 내 첫 번째 가격
+            pricelist = re.search(
+                r'class="prod_pricelist".*?<strong>([\d,]{5,12})</strong>',
+                html, re.DOTALL
+            )
+            if pricelist:
+                price = int(pricelist.group(1).replace(',', ''))
+                if 10000 < price < 50000000:
+                    return {"price": price, "source": "danawa_list"}
 
-            # 패턴 2: alt="쿠팡" 이미지 근처 가격
-            coupang_sections = re.findall(r'alt="쿠팡"[^>]*>.*?<strong[^>]*>([\d,]+)</strong>', html, re.DOTALL)
-            for price_str in coupang_sections:
-                price = int(price_str.replace(',', ''))
-                if 5000 < price < 50000000:
-                    coupang_prices.append(price)
+            # 방법 3: 쿠팡 와우회원가 (있으면 가장 정확)
+            wow_match = re.search(r'와우회원가[^\d]{0,10}([\d,]{5,12})', html)
+            if wow_match:
+                price = int(wow_match.group(1).replace(',', ''))
+                if 10000 < price < 50000000:
+                    return {"price": price, "source": "danawa_wow"}
 
-            # 패턴 3: 쿠팡 텍스트 근처 가격 (300자 내)
-            coupang_nearby = re.findall(r'쿠팡.{0,100}?([\d,]{4,12})\s*원', html)
-            for price_str in coupang_nearby:
-                price = int(price_str.replace(',', ''))
-                if 5000 < price < 50000000:
-                    coupang_prices.append(price)
+            # 방법 4: 6자리 이상 가격 중 중간값 (액세서리 제외)
+            all_prices = re.findall(r'([\d,]{6,12})\s*원', html)
+            price_list = sorted(set(int(p.replace(',', '')) for p in all_prices))
+            valid_prices = [p for p in price_list if 50000 < p < 50000000]
 
-            # 패턴 4: 로켓배송 근처 가격
-            rocket_prices = re.findall(r'로켓배송.{0,100}?([\d,]{4,12})\s*원', html)
-            for price_str in rocket_prices:
-                price = int(price_str.replace(',', ''))
-                if 5000 < price < 50000000:
-                    coupang_prices.append(price)
-
-            # 쿠팡 최저가 반환
-            if coupang_prices:
-                return {"price": min(coupang_prices), "source": "danawa_coupang"}
-
-            # 폴백: 전체 최저가
-            all_prices = re.findall(r'([\d,]{4,12})\s*원', html)
-            valid_prices = []
-            for p in all_prices:
-                price = int(p.replace(',', ''))
-                if 5000 < price < 50000000:
-                    valid_prices.append(price)
-
-            if valid_prices:
-                return {"price": min(valid_prices), "source": "danawa"}
+            if len(valid_prices) >= 3:
+                # 하위 1/3 지점 = 메인 상품 가격대
+                median_idx = len(valid_prices) // 3
+                return {"price": valid_prices[median_idx], "source": "danawa_median"}
+            elif valid_prices:
+                return {"price": valid_prices[0], "source": "danawa"}
 
     except Exception as e:
         pass
