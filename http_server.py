@@ -1480,7 +1480,7 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
 @mcp.tool()
 async def search_coupang_products(keyword: str, limit: int = 10) -> str:
     """
-    쿠팡에서 상품을 검색합니다. (로켓배송만)
+    쿠팡에서 상품을 검색합니다. (로켓배송 + 일반배송 분리 표시)
 
     **트리거 키워드:** 쇼핑, 최저가, 뭐사지, 추천, 가격, 검색, 구매, 할인, 가성비
 
@@ -1493,7 +1493,7 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
     import asyncio
 
     # 쿠팡 API limit 상한선 (최대 10)
-    api_limit = min(limit * 2, 10)
+    api_limit = min(limit, 10)
     data = await call_api("search", {"keyword": keyword, "limit": api_limit})
 
     if "error" in data:
@@ -1504,22 +1504,20 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
 
     products = data.get("data", {}).get("productData", [])
 
-    # 로켓배송만 필터
-    rocket_products = [p for p in products if p.get("isRocket", False)][:limit]
+    if not products:
+        return f"'{keyword}' 검색 결과가 없습니다."
 
-    if not rocket_products:
-        return f"'{keyword}' 로켓배송 상품이 없습니다."
+    # 로켓배송 / 일반배송 분리
+    rocket_products = [p for p in products if p.get("isRocket", False)]
+    normal_products = [p for p in products if not p.get("isRocket", False)]
 
     # 상품별 다나와 가격 + 단축URL 병렬 조회
     async def get_product_info(product):
         name = product.get("productName", "")
         url = product.get("productUrl", "")
-
-        # 상품명에서 핵심 키워드 추출 (앞 4단어)
         keywords = name.split()[:4]
         search_keyword = " ".join(keywords)
 
-        # 병렬로 다나와 가격 + 단축URL 조회
         danawa_task = get_danawa_price(search_keyword)
         url_task = shorten_url(url)
         danawa_result, short_url = await asyncio.gather(danawa_task, url_task)
@@ -1531,22 +1529,37 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
         }
 
     # 모든 상품 정보 병렬 조회
-    product_infos = await asyncio.gather(*[get_product_info(p) for p in rocket_products])
+    all_products = rocket_products + normal_products
+    product_infos = await asyncio.gather(*[get_product_info(p) for p in all_products])
 
-    lines = [f"# {keyword} TOP {len(rocket_products)}\n"]
+    # 결과 분리
+    rocket_infos = product_infos[:len(rocket_products)]
+    normal_infos = product_infos[len(rocket_products):]
 
-    for idx, info in enumerate(product_infos, 1):
-        short_name = truncate_name(info["name"])
+    lines = [f"# {keyword}\n"]
 
-        # 다나와 가격 있으면 표시
-        if info["danawa_price"]:
-            price_str = f" | {format_price(info['danawa_price'])}"
-        else:
-            price_str = ""
+    # 로켓배송 섹션
+    if rocket_infos:
+        lines.append(f"## rocket ({len(rocket_infos)})\n")
+        for idx, info in enumerate(rocket_infos, 1):
+            short_name = truncate_name(info["name"])
+            price_str = f" | {format_price(info['danawa_price'])}" if info["danawa_price"] else ""
+            lines.append(f"{idx}) {short_name}{price_str}")
+            lines.append(f"link: {info['short_url']}")
+            lines.append("")
 
-        lines.append(f"{idx}) {short_name}{price_str}")
-        lines.append(f"link: {info['short_url']}")
-        lines.append("")
+    # 일반배송 섹션
+    if normal_infos:
+        lines.append(f"## normal ({len(normal_infos)})\n")
+        for idx, info in enumerate(normal_infos, 1):
+            short_name = truncate_name(info["name"])
+            price_str = f" | {format_price(info['danawa_price'])}" if info["danawa_price"] else ""
+            lines.append(f"{idx}) {short_name}{price_str}")
+            lines.append(f"link: {info['short_url']}")
+            lines.append("")
+
+    if not rocket_infos and not normal_infos:
+        return f"'{keyword}' 검색 결과가 없습니다."
 
     return "\n".join(lines)
 
