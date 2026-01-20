@@ -1264,6 +1264,7 @@ async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
     async def get_product_info(product):
         name = product.get("productName", "")
         url = product.get("productUrl", "")
+        coupang_price = product.get("productPrice", 0)
         keywords = name.split()[:4]
         search_keyword = " ".join(keywords)
 
@@ -1271,10 +1272,12 @@ async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
         url_task = shorten_url(url)
         danawa_result, short_url = await asyncio.gather(danawa_task, url_task)
 
+        final_price = danawa_result.get("price") or (coupang_price if coupang_price > 0 else None)
+
         return {
             "name": name,
             "short_url": short_url,
-            "danawa_price": danawa_result.get("price")
+            "danawa_price": final_price
         }
 
     product_infos = await asyncio.gather(*[get_product_info(p) for p in rocket_products])
@@ -1335,6 +1338,7 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
     async def get_product_info(product):
         name = product.get("productName", "")
         url = product.get("productUrl", "")
+        coupang_price = product.get("productPrice", 0)
         keywords = name.split()[:4]
         search_keyword = " ".join(keywords)
 
@@ -1342,10 +1346,12 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
         url_task = shorten_url(url)
         danawa_result, short_url = await asyncio.gather(danawa_task, url_task)
 
+        final_price = danawa_result.get("price") or (coupang_price if coupang_price > 0 else None)
+
         return {
             "name": name,
             "short_url": short_url,
-            "danawa_price": danawa_result.get("price")
+            "danawa_price": final_price
         }
 
     all_products = rocket_products + normal_products
@@ -1418,6 +1424,7 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
     async def get_product_info(product):
         name = product.get("productName", "")
         url = product.get("productUrl", "")
+        coupang_price = product.get("productPrice", 0)
         keywords = name.split()[:4]
         search_keyword = " ".join(keywords)
 
@@ -1425,10 +1432,12 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
         url_task = shorten_url(url)
         danawa_result, short_url = await asyncio.gather(danawa_task, url_task)
 
+        final_price = danawa_result.get("price") or (coupang_price if coupang_price > 0 else None)
+
         return {
             "name": name,
             "short_url": short_url,
-            "danawa_price": danawa_result.get("price")
+            "danawa_price": final_price
         }
 
     all_products = rocket_products + normal_products
@@ -1498,6 +1507,7 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
     async def get_product_info(product):
         name = product.get("productName", "")
         url = product.get("productUrl", "")
+        coupang_price = product.get("productPrice", 0)  # 쿠팡 API 가격 (폴백용)
         keywords = name.split()[:4]
         search_keyword = " ".join(keywords)
 
@@ -1505,10 +1515,13 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
         url_task = shorten_url(url)
         danawa_result, short_url = await asyncio.gather(danawa_task, url_task)
 
+        # 다나와 가격 우선, 없으면 쿠팡 API 가격 사용
+        final_price = danawa_result.get("price") or (coupang_price if coupang_price > 0 else None)
+
         return {
             "name": name,
             "short_url": short_url,
-            "danawa_price": danawa_result.get("price")
+            "danawa_price": final_price
         }
 
     # 모든 상품 정보 병렬 조회
@@ -1643,6 +1656,7 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         name = product.get("productName", "")
         url = product.get("productUrl", "")
         discount_rate = product.get("discountRate", 0)
+        coupang_price = product.get("productPrice", 0)
 
         # 상품명에서 핵심 키워드 추출 (앞 3-4단어)
         keywords = name.split()[:4]
@@ -1653,11 +1667,14 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         url_task = shorten_url(url)
         danawa_result, short_url = await asyncio.gather(danawa_task, url_task)
 
+        # 다나와 가격 우선, 없으면 쿠팡 API 가격 사용
+        final_price = danawa_result.get("price") or (coupang_price if coupang_price > 0 else None)
+
         return {
             "name": name,
             "short_url": short_url,
             "discount_rate": discount_rate,
-            "danawa_price": danawa_result.get("price")
+            "danawa_price": final_price
         }
 
     # 모든 상품 정보 병렬 조회
