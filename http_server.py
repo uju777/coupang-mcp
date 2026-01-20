@@ -118,75 +118,26 @@ def truncate_name(name: str, max_len: int = 30) -> str:
 
 
 async def get_danawa_price(keyword: str) -> dict:
-    """다나와에서 실제 가격 조회 (쿠팡 API 가격이 부정확해서)
+    """다나와에서 실제 가격 조회 (Netlify 도쿄 리전 프록시 경유)
 
-    첫 번째 검색 결과(메인 상품)의 가격을 추출하여
-    액세서리/케이스 등 관련 상품 가격이 아닌 실제 상품 가격을 반환
+    HF Space는 해외 서버라 다나와 직접 접속 불가 → Netlify 프록시 사용
+    프록시: https://danawa-proxy-test.netlify.app (도쿄 리전, 아시아 IP)
     """
-    import re
     from urllib.parse import quote
 
     try:
         encoded_keyword = quote(keyword)
-        url = f"https://search.danawa.com/dsearch.php?query={encoded_keyword}"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36",
-            "Accept": "text/html,application/xhtml+xml",
-            "Accept-Language": "ko-KR,ko;q=0.9"
-        }
+        proxy_url = f"https://danawa-proxy-test.netlify.app/.netlify/functions/danawa-test?keyword={encoded_keyword}"
 
         async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers, timeout=8.0, follow_redirects=True)
-            html = response.text
+            response = await client.get(proxy_url, timeout=10.0)
+            data = response.json()
 
-            # 방법 1: prod_main_info 클래스 내 가격 (첫 번째 메인 상품)
-            # 단, 10만원 미만은 월 할부금일 수 있으므로 저장만 해둠
-            main_price = None
-            main_info = re.search(
-                r'class="prod_main_info".*?<p class="price_sect"[^>]*>.*?([\d,]{5,12})\s*원',
-                html, re.DOTALL
-            )
-            if main_info:
-                price = int(main_info.group(1).replace(',', ''))
-                if price >= 15000:  # 1.5만원 이상이면 바로 반환 (저가 상품 지원)
-                    return {"price": price, "source": "danawa_main"}
-                elif price > 5000:  # 5천원~1.5만원은 저장
-                    main_price = price
-
-            # 방법 2: prod_pricelist 내 첫 번째 가격
-            pricelist = re.search(
-                r'class="prod_pricelist".*?<strong>([\d,]{5,12})</strong>',
-                html, re.DOTALL
-            )
-            if pricelist:
-                price = int(pricelist.group(1).replace(',', ''))
-                if price >= 15000:
-                    return {"price": price, "source": "danawa_list"}
-                elif not main_price and price > 5000:
-                    main_price = price
-
-            # 방법 3: 쿠팡 와우회원가 (있으면 가장 정확)
-            wow_match = re.search(r'와우회원가[^\d]{0,10}([\d,]{5,12})', html)
-            if wow_match:
-                price = int(wow_match.group(1).replace(',', ''))
-                if 10000 < price < 50000000:
-                    return {"price": price, "source": "danawa_wow"}
-
-            # 방법 4: 5자리 이상 가격 중 중간값
-            all_prices = re.findall(r'([\d,]{5,12})\s*원', html)
-            price_list = sorted(set(int(p.replace(',', '')) for p in all_prices))
-            valid_prices = [p for p in price_list if 5000 < p < 50000000]
-
-            if len(valid_prices) >= 3:
-                # 하위 1/3 지점 = 메인 상품 가격대
-                median_idx = len(valid_prices) // 3
-                return {"price": valid_prices[median_idx], "source": "danawa_median"}
-            elif valid_prices:
-                return {"price": valid_prices[0], "source": "danawa"}
-
-            # 폴백: main_price가 있으면 사용 (저가 상품의 경우)
-            if main_price:
-                return {"price": main_price, "source": "danawa_main_low"}
+            if data.get("success") and data.get("price"):
+                # 프록시가 반환한 가격 문자열을 숫자로 변환
+                price_str = data["price"].replace(",", "")
+                price = int(price_str)
+                return {"price": price, "source": "danawa_proxy"}
 
     except Exception as e:
         pass
