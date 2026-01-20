@@ -140,14 +140,18 @@ async def get_danawa_price(keyword: str) -> dict:
             html = response.text
 
             # 방법 1: prod_main_info 클래스 내 가격 (첫 번째 메인 상품)
+            # 단, 10만원 미만은 월 할부금일 수 있으므로 저장만 해둠
+            main_price = None
             main_info = re.search(
                 r'class="prod_main_info".*?<p class="price_sect"[^>]*>.*?([\d,]{5,12})\s*원',
                 html, re.DOTALL
             )
             if main_info:
                 price = int(main_info.group(1).replace(',', ''))
-                if 10000 < price < 50000000:
+                if price >= 100000:  # 10만원 이상이면 바로 반환
                     return {"price": price, "source": "danawa_main"}
+                elif price > 10000:  # 10만원 미만은 할부금일 수 있음
+                    main_price = price
 
             # 방법 2: prod_pricelist 내 첫 번째 가격
             pricelist = re.search(
@@ -156,8 +160,10 @@ async def get_danawa_price(keyword: str) -> dict:
             )
             if pricelist:
                 price = int(pricelist.group(1).replace(',', ''))
-                if 10000 < price < 50000000:
+                if price >= 100000:
                     return {"price": price, "source": "danawa_list"}
+                elif not main_price and price > 10000:
+                    main_price = price
 
             # 방법 3: 쿠팡 와우회원가 (있으면 가장 정확)
             wow_match = re.search(r'와우회원가[^\d]{0,10}([\d,]{5,12})', html)
@@ -177,6 +183,10 @@ async def get_danawa_price(keyword: str) -> dict:
                 return {"price": valid_prices[median_idx], "source": "danawa_median"}
             elif valid_prices:
                 return {"price": valid_prices[0], "source": "danawa"}
+
+            # 폴백: main_price가 있으면 사용 (저가 상품의 경우)
+            if main_price:
+                return {"price": main_price, "source": "danawa_main_low"}
 
     except Exception as e:
         pass
