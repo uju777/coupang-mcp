@@ -148,9 +148,9 @@ async def get_danawa_price(keyword: str) -> dict:
             )
             if main_info:
                 price = int(main_info.group(1).replace(',', ''))
-                if price >= 100000:  # 10만원 이상이면 바로 반환
+                if price >= 15000:  # 1.5만원 이상이면 바로 반환 (저가 상품 지원)
                     return {"price": price, "source": "danawa_main"}
-                elif price > 10000:  # 10만원 미만은 할부금일 수 있음
+                elif price > 5000:  # 5천원~1.5만원은 저장
                     main_price = price
 
             # 방법 2: prod_pricelist 내 첫 번째 가격
@@ -160,9 +160,9 @@ async def get_danawa_price(keyword: str) -> dict:
             )
             if pricelist:
                 price = int(pricelist.group(1).replace(',', ''))
-                if price >= 100000:
+                if price >= 15000:
                     return {"price": price, "source": "danawa_list"}
-                elif not main_price and price > 10000:
+                elif not main_price and price > 5000:
                     main_price = price
 
             # 방법 3: 쿠팡 와우회원가 (있으면 가장 정확)
@@ -172,10 +172,10 @@ async def get_danawa_price(keyword: str) -> dict:
                 if 10000 < price < 50000000:
                     return {"price": price, "source": "danawa_wow"}
 
-            # 방법 4: 6자리 이상 가격 중 중간값 (액세서리 제외)
-            all_prices = re.findall(r'([\d,]{6,12})\s*원', html)
+            # 방법 4: 5자리 이상 가격 중 중간값
+            all_prices = re.findall(r'([\d,]{5,12})\s*원', html)
             price_list = sorted(set(int(p.replace(',', '')) for p in all_prices))
-            valid_prices = [p for p in price_list if 50000 < p < 50000000]
+            valid_prices = [p for p in price_list if 5000 < p < 50000000]
 
             if len(valid_prices) >= 3:
                 # 하위 1/3 지점 = 메인 상품 가격대
