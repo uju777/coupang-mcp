@@ -1570,6 +1570,8 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
     Args:
         limit: 결과 개수 (기본 10개)
     """
+    import asyncio
+
     data = await call_api("goldbox", {"limit": limit * 2})
 
     if "error" in data:
@@ -1590,24 +1592,49 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
     if not sorted_products:
         return "로켓배송 골드박스 상품이 없습니다."
 
+    # 상품별 다나와 가격 + 단축URL 병렬 조회
+    async def get_product_info(product):
+        name = product.get("productName", "")
+        url = product.get("productUrl", "")
+        discount_rate = product.get("discountRate", 0)
+
+        # 상품명에서 핵심 키워드 추출 (앞 3-4단어)
+        keywords = name.split()[:4]
+        search_keyword = " ".join(keywords)
+
+        # 병렬로 다나와 가격 + 단축URL 조회
+        danawa_task = get_danawa_price(search_keyword)
+        url_task = shorten_url(url)
+        danawa_result, short_url = await asyncio.gather(danawa_task, url_task)
+
+        return {
+            "name": name,
+            "short_url": short_url,
+            "discount_rate": discount_rate,
+            "danawa_price": danawa_result.get("price")
+        }
+
+    # 모든 상품 정보 병렬 조회
+    product_infos = await asyncio.gather(*[get_product_info(p) for p in sorted_products])
+
     # 최대 할인율
     discounts = [p.get("discountRate", 0) for p in sorted_products if p.get("discountRate", 0) > 0]
     max_discount = max(discounts) if discounts else 0
 
     lines = [f"# goldbox TOP {len(sorted_products)} (max {max_discount}% off)\n"]
 
-    for idx, product in enumerate(sorted_products, 1):
-        name = product.get("productName", "")
-        url = product.get("productUrl", "")
-        discount_rate = product.get("discountRate", 0)
+    for idx, info in enumerate(product_infos, 1):
+        short_name = truncate_name(info["name"])
+        discount = f" -{info['discount_rate']}%" if info["discount_rate"] > 0 else ""
 
-        short_url = await shorten_url(url)
-        short_name = truncate_name(name)
-        discount = f" -{discount_rate}%" if discount_rate > 0 else ""
+        # 다나와 가격 있으면 표시
+        if info["danawa_price"]:
+            price_str = f" | {format_price(info['danawa_price'])}"
+        else:
+            price_str = ""
 
-        lines.append(f"{idx}) {short_name}{discount}")
-        lines.append(f"delivery: rocket")
-        lines.append(f"link: {short_url}")
+        lines.append(f"{idx}) {short_name}{discount}{price_str}")
+        lines.append(f"link: {info['short_url']}")
         lines.append("")
 
     return "\n".join(lines)
