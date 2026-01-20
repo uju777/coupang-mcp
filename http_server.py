@@ -1241,10 +1241,15 @@ async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
 
     Args:
         keyword: 검색 키워드
-        limit: 결과 개수 (기본 5)
+        limit: 결과 개수 (기본 10)
     """
-    # 더 많이 가져와서 로켓배송만 필터링
-    data = await call_api("search", {"keyword": keyword, "limit": limit * 3})
+    import asyncio
+
+    # 쿠팡 API + 다나와 가격 병렬 조회
+    coupang_task = call_api("search", {"keyword": keyword, "limit": limit * 3})
+    danawa_task = get_danawa_price(keyword)
+
+    data, danawa_result = await asyncio.gather(coupang_task, danawa_task)
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1260,24 +1265,22 @@ async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
     if not rocket_products:
         return f"'{keyword}' 로켓배송 상품이 없습니다. 일반 검색을 시도해보세요."
 
-    buying_tip = get_buying_tip(keyword)
+    # 다나와 가격 정보
+    danawa_price = danawa_result.get("price")
+    price_info = f"(최저가 약 {format_price(danawa_price)})" if danawa_price else ""
 
-    lines = [f"# {keyword} rocket TOP {len(rocket_products)}\n"]
+    lines = [f"# {keyword} rocket TOP {len(rocket_products)} {price_info}\n"]
 
     for idx, product in enumerate(rocket_products, 1):
         name = product.get("productName", "")
-        price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
 
         short_url = await shorten_url(url)
-        price_range = format_price_range(price)
         short_name = truncate_name(name)
 
         lines.append(f"{idx}) {short_name}")
-        lines.append(f"price: {price_range}")
         lines.append(f"delivery: rocket")
         lines.append(f"link: {short_url}")
-        lines.append(f"alt_search: {keyword} refurb")
         lines.append("")
 
     return "\n".join(lines)
@@ -1295,10 +1298,15 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
     Args:
         keyword: 검색 키워드
         max_price: 최대 가격 (기본 50000원)
-        limit: 결과 개수 (기본 5)
+        limit: 결과 개수 (기본 10)
     """
-    # 더 많이 가져와서 가격 필터링
-    data = await call_api("search", {"keyword": keyword, "limit": limit * 4})
+    import asyncio
+
+    # 쿠팡 API + 다나와 가격 병렬 조회
+    coupang_task = call_api("search", {"keyword": keyword, "limit": limit * 4})
+    danawa_task = get_danawa_price(keyword)
+
+    data, danawa_result = await asyncio.gather(coupang_task, danawa_task)
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1308,34 +1316,30 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
 
     products = data.get("data", {}).get("productData", [])
 
-    # 가격 필터 + 정렬
-    budget_products = [p for p in products if p.get("productPrice", 0) <= max_price]
+    # 가격 필터 + 정렬 + 로켓배송만
+    budget_products = [p for p in products if p.get("productPrice", 0) <= max_price and p.get("isRocket", False)]
     budget_products.sort(key=lambda x: x.get("productPrice", 0))
     budget_products = budget_products[:limit]
 
     if not budget_products:
-        return f"'{keyword}' {max_price:,}원 이하 상품이 없습니다. 예산을 늘려보세요."
+        return f"'{keyword}' {max_price:,}원 이하 로켓배송 상품이 없습니다. 예산을 늘려보세요."
 
-    buying_tip = get_buying_tip(keyword)
+    # 다나와 가격 정보
+    danawa_price = danawa_result.get("price")
+    price_info = f"(다나와 최저가 약 {format_price(danawa_price)})" if danawa_price else ""
 
-    lines = [f"# {keyword} under {max_price:,} TOP {len(budget_products)}\n"]
+    lines = [f"# {keyword} under {max_price:,} TOP {len(budget_products)} {price_info}\n"]
 
     for idx, product in enumerate(budget_products, 1):
         name = product.get("productName", "")
-        price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
-        is_rocket = product.get("isRocket", False)
 
         short_url = await shorten_url(url)
-        price_range = format_price_range(price)
         short_name = truncate_name(name)
-        delivery = "rocket" if is_rocket else "normal"
 
         lines.append(f"{idx}) {short_name}")
-        lines.append(f"price: {price_range}")
-        lines.append(f"delivery: {delivery}")
+        lines.append(f"delivery: rocket")
         lines.append(f"link: {short_url}")
-        lines.append(f"alt_search: {keyword} refurb")
         lines.append("")
 
     return "\n".join(lines)
@@ -1352,12 +1356,18 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
 
     Args:
         keyword: 검색 키워드
-        limit: 비교할 상품 수 (기본 3, 최대 5)
+        limit: 비교할 상품 수 (기본 5, 최대 5)
     """
+    import asyncio
+
     if limit > 5:
         limit = 5
 
-    data = await call_api("search", {"keyword": keyword, "limit": limit})
+    # 쿠팡 API + 다나와 가격 병렬 조회
+    coupang_task = call_api("search", {"keyword": keyword, "limit": limit * 3})
+    danawa_task = get_danawa_price(keyword)
+
+    data, danawa_result = await asyncio.gather(coupang_task, danawa_task)
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1367,27 +1377,28 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
 
     products = data.get("data", {}).get("productData", [])
 
-    if not products:
-        return f"'{keyword}' 검색 결과가 없습니다."
+    # 로켓배송만 필터
+    rocket_products = [p for p in products if p.get("isRocket", False)][:limit]
 
-    lines = [f"# {keyword} compare {len(products[:limit])}\n"]
+    if not rocket_products:
+        return f"'{keyword}' 로켓배송 검색 결과가 없습니다."
 
-    for idx, product in enumerate(products[:limit], 1):
+    # 다나와 가격 정보
+    danawa_price = danawa_result.get("price")
+    price_info = f"(최저가 약 {format_price(danawa_price)})" if danawa_price else ""
+
+    lines = [f"# {keyword} compare {len(rocket_products)} {price_info}\n"]
+
+    for idx, product in enumerate(rocket_products, 1):
         name = product.get("productName", "")
-        price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
-        is_rocket = product.get("isRocket", False)
 
         short_url = await shorten_url(url)
-        price_range = format_price_range(price)
         short_name = truncate_name(name, 30)
-        delivery = "rocket" if is_rocket else "normal"
 
         lines.append(f"{idx}) {short_name}")
-        lines.append(f"price: {price_range}")
-        lines.append(f"delivery: {delivery}")
+        lines.append(f"delivery: rocket")
         lines.append(f"link: {short_url}")
-        lines.append(f"alt_search: {keyword} refurb")
         lines.append("")
 
     return "\n".join(lines)
@@ -1463,7 +1474,7 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 10) ->
 
     Args:
         category_id: 1012(식품), 1016(전자), 1001(패션), 1010(뷰티), 1015(홈), 1011(육아)
-        limit: 결과 개수 (기본 5)
+        limit: 결과 개수 (기본 10)
     """
     category_names = {
         1001: "여성패션", 1002: "남성패션", 1010: "뷰티",
@@ -1473,7 +1484,7 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 10) ->
         1029: "반려동물용품"
     }
 
-    data = await call_api("best", {"category_id": category_id, "limit": limit})
+    data = await call_api("best", {"category_id": category_id, "limit": limit * 2})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1486,27 +1497,24 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 10) ->
     if not products:
         return f"카테고리 {category_id} 베스트 상품이 없습니다."
 
+    # 로켓배송만 필터
+    rocket_products = [p for p in products if p.get("isRocket", False)][:limit]
+
     category_name = category_names.get(category_id, str(category_id))
 
-    lines = [f"# {category_name} best TOP {len(products[:limit])}\n"]
+    lines = [f"# {category_name} best TOP {len(rocket_products)}\n"]
 
-    for idx, product in enumerate(products[:limit], 1):
+    for idx, product in enumerate(rocket_products, 1):
         name = product.get("productName", "")
-        price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
         rank = product.get("rank", idx)
-        is_rocket = product.get("isRocket", False)
 
         short_url = await shorten_url(url)
-        price_range = format_price_range(price)
         short_name = truncate_name(name)
-        delivery = "rocket" if is_rocket else "normal"
 
         lines.append(f"{rank}) {short_name}")
-        lines.append(f"price: {price_range}")
-        lines.append(f"delivery: {delivery}")
+        lines.append(f"delivery: rocket")
         lines.append(f"link: {short_url}")
-        lines.append(f"alt_search: {category_name} refurb")
         lines.append("")
 
     return "\n".join(lines)
@@ -1524,7 +1532,7 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
     Args:
         limit: 결과 개수 (기본 10개)
     """
-    data = await call_api("goldbox", {"limit": limit})
+    data = await call_api("goldbox", {"limit": limit * 2})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1537,11 +1545,14 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
     if not products:
         return "골드박스 상품이 없습니다."
 
-    # 🔥 할인율순 정렬 (높은 순)
-    sorted_products = sorted(products, key=lambda x: x.get("discountRate", 0), reverse=True)[:limit]
+    # 로켓배송만 필터 + 할인율순 정렬
+    rocket_products = [p for p in products if p.get("isRocket", False)]
+    sorted_products = sorted(rocket_products, key=lambda x: x.get("discountRate", 0), reverse=True)[:limit]
 
-    # 통계 계산
-    prices = [p.get("productPrice", 0) for p in sorted_products]
+    if not sorted_products:
+        return "로켓배송 골드박스 상품이 없습니다."
+
+    # 최대 할인율
     discounts = [p.get("discountRate", 0) for p in sorted_products if p.get("discountRate", 0) > 0]
     max_discount = max(discounts) if discounts else 0
 
@@ -1549,22 +1560,16 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
 
     for idx, product in enumerate(sorted_products, 1):
         name = product.get("productName", "")
-        price = product.get("productPrice", 0)
         url = product.get("productUrl", "")
-        is_rocket = product.get("isRocket", False)
         discount_rate = product.get("discountRate", 0)
 
         short_url = await shorten_url(url)
-        price_range = format_price_range(price)
         short_name = truncate_name(name)
-        delivery = "rocket" if is_rocket else "normal"
         discount = f" -{discount_rate}%" if discount_rate > 0 else ""
 
         lines.append(f"{idx}) {short_name}{discount}")
-        lines.append(f"price: {price_range}")
-        lines.append(f"delivery: {delivery}")
+        lines.append(f"delivery: rocket")
         lines.append(f"link: {short_url}")
-        lines.append(f"alt_search: goldbox")
         lines.append("")
 
     return "\n".join(lines)
