@@ -1285,11 +1285,7 @@ async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
     """
     import asyncio
 
-    # 쿠팡 API + 다나와 가격 병렬 조회
-    coupang_task = call_api("search", {"keyword": keyword, "limit": limit * 3})
-    danawa_task = get_danawa_price(keyword)
-
-    data, danawa_result = await asyncio.gather(coupang_task, danawa_task)
+    data = await call_api("search", {"keyword": keyword, "limit": limit * 3})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1305,22 +1301,33 @@ async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
     if not rocket_products:
         return f"'{keyword}' 로켓배송 상품이 없습니다. 일반 검색을 시도해보세요."
 
-    # 다나와 가격 정보
-    danawa_price = danawa_result.get("price")
-    price_info = f"(최저가 약 {format_price(danawa_price)})" if danawa_price else ""
-
-    lines = [f"# {keyword} rocket TOP {len(rocket_products)} {price_info}\n"]
-
-    for idx, product in enumerate(rocket_products, 1):
+    # 상품별 다나와 가격 + 단축URL 병렬 조회
+    async def get_product_info(product):
         name = product.get("productName", "")
         url = product.get("productUrl", "")
+        keywords = name.split()[:4]
+        search_keyword = " ".join(keywords)
 
-        short_url = await shorten_url(url)
-        short_name = truncate_name(name)
+        danawa_task = get_danawa_price(search_keyword)
+        url_task = shorten_url(url)
+        danawa_result, short_url = await asyncio.gather(danawa_task, url_task)
 
-        lines.append(f"{idx}) {short_name}")
-        lines.append(f"delivery: rocket")
-        lines.append(f"link: {short_url}")
+        return {
+            "name": name,
+            "short_url": short_url,
+            "danawa_price": danawa_result.get("price")
+        }
+
+    product_infos = await asyncio.gather(*[get_product_info(p) for p in rocket_products])
+
+    lines = [f"# {keyword} rocket TOP {len(rocket_products)}\n"]
+
+    for idx, info in enumerate(product_infos, 1):
+        short_name = truncate_name(info["name"])
+        price_str = f" | {format_price(info['danawa_price'])}" if info["danawa_price"] else ""
+
+        lines.append(f"{idx}) {short_name}{price_str}")
+        lines.append(f"link: {info['short_url']}")
         lines.append("")
 
     return "\n".join(lines)
@@ -1342,11 +1349,7 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
     """
     import asyncio
 
-    # 쿠팡 API + 다나와 가격 병렬 조회
-    coupang_task = call_api("search", {"keyword": keyword, "limit": limit * 4})
-    danawa_task = get_danawa_price(keyword)
-
-    data, danawa_result = await asyncio.gather(coupang_task, danawa_task)
+    data = await call_api("search", {"keyword": keyword, "limit": limit * 4})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1364,22 +1367,33 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
     if not budget_products:
         return f"'{keyword}' {max_price:,}원 이하 로켓배송 상품이 없습니다. 예산을 늘려보세요."
 
-    # 다나와 가격 정보
-    danawa_price = danawa_result.get("price")
-    price_info = f"(다나와 최저가 약 {format_price(danawa_price)})" if danawa_price else ""
-
-    lines = [f"# {keyword} under {max_price:,} TOP {len(budget_products)} {price_info}\n"]
-
-    for idx, product in enumerate(budget_products, 1):
+    # 상품별 다나와 가격 + 단축URL 병렬 조회
+    async def get_product_info(product):
         name = product.get("productName", "")
         url = product.get("productUrl", "")
+        keywords = name.split()[:4]
+        search_keyword = " ".join(keywords)
 
-        short_url = await shorten_url(url)
-        short_name = truncate_name(name)
+        danawa_task = get_danawa_price(search_keyword)
+        url_task = shorten_url(url)
+        danawa_result, short_url = await asyncio.gather(danawa_task, url_task)
 
-        lines.append(f"{idx}) {short_name}")
-        lines.append(f"delivery: rocket")
-        lines.append(f"link: {short_url}")
+        return {
+            "name": name,
+            "short_url": short_url,
+            "danawa_price": danawa_result.get("price")
+        }
+
+    product_infos = await asyncio.gather(*[get_product_info(p) for p in budget_products])
+
+    lines = [f"# {keyword} under {max_price:,} TOP {len(budget_products)}\n"]
+
+    for idx, info in enumerate(product_infos, 1):
+        short_name = truncate_name(info["name"])
+        price_str = f" | {format_price(info['danawa_price'])}" if info["danawa_price"] else ""
+
+        lines.append(f"{idx}) {short_name}{price_str}")
+        lines.append(f"link: {info['short_url']}")
         lines.append("")
 
     return "\n".join(lines)
@@ -1403,11 +1417,7 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
     if limit > 5:
         limit = 5
 
-    # 쿠팡 API + 다나와 가격 병렬 조회
-    coupang_task = call_api("search", {"keyword": keyword, "limit": limit * 3})
-    danawa_task = get_danawa_price(keyword)
-
-    data, danawa_result = await asyncio.gather(coupang_task, danawa_task)
+    data = await call_api("search", {"keyword": keyword, "limit": limit * 3})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1423,22 +1433,33 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
     if not rocket_products:
         return f"'{keyword}' 로켓배송 검색 결과가 없습니다."
 
-    # 다나와 가격 정보
-    danawa_price = danawa_result.get("price")
-    price_info = f"(최저가 약 {format_price(danawa_price)})" if danawa_price else ""
-
-    lines = [f"# {keyword} compare {len(rocket_products)} {price_info}\n"]
-
-    for idx, product in enumerate(rocket_products, 1):
+    # 상품별 다나와 가격 + 단축URL 병렬 조회
+    async def get_product_info(product):
         name = product.get("productName", "")
         url = product.get("productUrl", "")
+        keywords = name.split()[:4]
+        search_keyword = " ".join(keywords)
 
-        short_url = await shorten_url(url)
-        short_name = truncate_name(name, 30)
+        danawa_task = get_danawa_price(search_keyword)
+        url_task = shorten_url(url)
+        danawa_result, short_url = await asyncio.gather(danawa_task, url_task)
 
-        lines.append(f"{idx}) {short_name}")
-        lines.append(f"delivery: rocket")
-        lines.append(f"link: {short_url}")
+        return {
+            "name": name,
+            "short_url": short_url,
+            "danawa_price": danawa_result.get("price")
+        }
+
+    product_infos = await asyncio.gather(*[get_product_info(p) for p in rocket_products])
+
+    lines = [f"# {keyword} compare {len(rocket_products)}\n"]
+
+    for idx, info in enumerate(product_infos, 1):
+        short_name = truncate_name(info["name"], 30)
+        price_str = f" | {format_price(info['danawa_price'])}" if info["danawa_price"] else ""
+
+        lines.append(f"{idx}) {short_name}{price_str}")
+        lines.append(f"link: {info['short_url']}")
         lines.append("")
 
     return "\n".join(lines)
@@ -1459,11 +1480,7 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
     """
     import asyncio
 
-    # 쿠팡 API + 다나와 가격 병렬 조회
-    coupang_task = call_api("search", {"keyword": keyword, "limit": limit * 3})
-    danawa_task = get_danawa_price(keyword)
-
-    data, danawa_result = await asyncio.gather(coupang_task, danawa_task)
+    data = await call_api("search", {"keyword": keyword, "limit": limit * 3})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1479,25 +1496,42 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
     if not rocket_products:
         return f"'{keyword}' 로켓배송 상품이 없습니다."
 
-    # 다나와 가격 정보 헤더에 추가
-    danawa_price = danawa_result.get("price")
-    if danawa_price:
-        price_info = f"(최저가 약 {format_price(danawa_price)})"
-    else:
-        price_info = ""
-
-    lines = [f"# {keyword} TOP {len(rocket_products)} {price_info}\n"]
-
-    for idx, product in enumerate(rocket_products, 1):
+    # 상품별 다나와 가격 + 단축URL 병렬 조회
+    async def get_product_info(product):
         name = product.get("productName", "")
         url = product.get("productUrl", "")
 
-        short_url = await shorten_url(url)
-        short_name = truncate_name(name)
+        # 상품명에서 핵심 키워드 추출 (앞 4단어)
+        keywords = name.split()[:4]
+        search_keyword = " ".join(keywords)
 
-        lines.append(f"{idx}) {short_name}")
-        lines.append(f"delivery: rocket")
-        lines.append(f"link: {short_url}")
+        # 병렬로 다나와 가격 + 단축URL 조회
+        danawa_task = get_danawa_price(search_keyword)
+        url_task = shorten_url(url)
+        danawa_result, short_url = await asyncio.gather(danawa_task, url_task)
+
+        return {
+            "name": name,
+            "short_url": short_url,
+            "danawa_price": danawa_result.get("price")
+        }
+
+    # 모든 상품 정보 병렬 조회
+    product_infos = await asyncio.gather(*[get_product_info(p) for p in rocket_products])
+
+    lines = [f"# {keyword} TOP {len(rocket_products)}\n"]
+
+    for idx, info in enumerate(product_infos, 1):
+        short_name = truncate_name(info["name"])
+
+        # 다나와 가격 있으면 표시
+        if info["danawa_price"]:
+            price_str = f" | {format_price(info['danawa_price'])}"
+        else:
+            price_str = ""
+
+        lines.append(f"{idx}) {short_name}{price_str}")
+        lines.append(f"link: {info['short_url']}")
         lines.append("")
 
     return "\n".join(lines)
