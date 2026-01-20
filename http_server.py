@@ -195,14 +195,20 @@ async def get_danawa_price(keyword: str) -> dict:
 
 
 def format_price(price: int) -> str:
-    """가격을 읽기 좋게 포맷 (정확한 가격용)"""
+    """가격을 읽기 좋게 포맷: 숫자 + (만원 환산)
+
+    예시:
+    - 1,890,000원 (189만원)
+    - 1,890,123원 (189만원대)
+    - 35,000원 (3.5만원)
+    """
     if price >= 10000:
         man = price // 10000
         remainder = price % 10000
         if remainder == 0:
-            return f"{man:,}만원"
+            return f"{price:,}원 ({man}만원)"
         else:
-            return f"{price:,}원"
+            return f"{price:,}원 ({man}만원대)"
     return f"{price:,}원"
 
 
