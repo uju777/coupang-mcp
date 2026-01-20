@@ -1291,7 +1291,9 @@ async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
     """
     import asyncio
 
-    data = await call_api("search", {"keyword": keyword, "limit": limit * 3})
+    # 쿠팡 API limit 상한선 (최대 20)
+    api_limit = min(limit * 3, 20)
+    data = await call_api("search", {"keyword": keyword, "limit": api_limit})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1355,7 +1357,9 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
     """
     import asyncio
 
-    data = await call_api("search", {"keyword": keyword, "limit": limit * 4})
+    # 쿠팡 API limit 상한선 (최대 20)
+    api_limit = min(limit * 4, 20)
+    data = await call_api("search", {"keyword": keyword, "limit": api_limit})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1423,7 +1427,9 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
     if limit > 5:
         limit = 5
 
-    data = await call_api("search", {"keyword": keyword, "limit": limit * 3})
+    # 쿠팡 API limit 상한선 (최대 20)
+    api_limit = min(limit * 3, 20)
+    data = await call_api("search", {"keyword": keyword, "limit": api_limit})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1486,7 +1492,9 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
     """
     import asyncio
 
-    data = await call_api("search", {"keyword": keyword, "limit": limit * 3})
+    # 쿠팡 API limit 상한선 (최대 20)
+    api_limit = min(limit * 3, 20)
+    data = await call_api("search", {"keyword": keyword, "limit": api_limit})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
