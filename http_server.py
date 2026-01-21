@@ -110,14 +110,57 @@ def format_price_range(price: int) -> str:
         return f"약 {base // 10000}만원대"
 
 
+import re
+
+def parse_product_name(name: str) -> dict:
+    """상품명에서 기본명과 옵션 분리
+
+    예시:
+    - "이너홈 튼튼 니트릴 고무장갑 질긴, 5개, 중(M), 화이트"
+      → base: "이너홈 튼튼 니트릴 고무장갑 질긴"
+      → options: ["5개", "중(M)", "화이트"]
+    """
+    # 쉼표로 분리
+    parts = [p.strip() for p in name.split(',')]
+
+    if len(parts) <= 1:
+        # 쉼표 없으면 그대로
+        return {"base": name, "options": []}
+
+    # 첫 부분 = 기본 상품명
+    base = parts[0]
+
+    # 나머지 = 옵션들
+    options = [p for p in parts[1:] if p]
+
+    return {"base": base, "options": options}
+
+
+def format_product_display(name: str, price: int) -> str:
+    """상품 표시 포맷 (옵션 분리)
+
+    출력 예시:
+    이너홈 튼튼 니트릴 고무장갑 질긴
+    └ 옵션: 5개 / 중(M) / 화이트 | 16,900원
+    """
+    parsed = parse_product_name(name)
+    base = parsed["base"]
+    options = parsed["options"]
+
+    price_str = f"{price:,}원"
+
+    if options:
+        opt_str = " / ".join(options)
+        return f"{base}\n└ 옵션: {opt_str} | {price_str}"
+    else:
+        return f"{base} | {price_str}"
+
+
 def truncate_name(name: str, max_len: int = 30) -> str:
     """상품명 자르기 (가독성)"""
     if len(name) <= max_len:
         return name
     return name[:max_len-2] + ".."
-
-
-import re
 
 def extract_option_from_name(name: str) -> str:
     """상품명에서 옵션 정보 추출 (개수, 사이즈 등)
@@ -1340,11 +1383,17 @@ async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
     lines = [f"# {keyword} rocket TOP {len(rocket_products)}\n"]
 
     for idx, info in enumerate(product_infos, 1):
-        short_name = truncate_name(info["name"])
-        price_str = f" | {format_price(info['danawa_price'])}" if info["danawa_price"] else ""
+        parsed = parse_product_name(info["name"])
+        base_name = parsed["base"]
+        options = parsed["options"]
+        price_str = format_price(info['danawa_price']) if info["danawa_price"] else ""
 
-        lines.append(f"{idx}) {short_name}{price_str}")
-        lines.append(f"link: {info['short_url']}")
+        lines.append(f"{idx}) {base_name}")
+        if options:
+            lines.append(f"   옵션: {' / '.join(options)}")
+        if price_str:
+            lines.append(f"   가격: {price_str}")
+        lines.append(f"   link: {info['short_url']}")
         lines.append("")
 
     return "\n".join(lines)
@@ -1419,19 +1468,25 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
     if rocket_infos:
         lines.append(f"## rocket ({len(rocket_infos)})\n")
         for idx, info in enumerate(rocket_infos, 1):
-            short_name = truncate_name(info["name"])
-            price_str = f" | {format_price(info['danawa_price'])}" if info["danawa_price"] else ""
-            lines.append(f"{idx}) {short_name}{price_str}")
-            lines.append(f"link: {info['short_url']}")
+            parsed = parse_product_name(info["name"])
+            lines.append(f"{idx}) {parsed['base']}")
+            if parsed["options"]:
+                lines.append(f"   옵션: {' / '.join(parsed['options'])}")
+            if info["danawa_price"]:
+                lines.append(f"   가격: {format_price(info['danawa_price'])}")
+            lines.append(f"   link: {info['short_url']}")
             lines.append("")
 
     if normal_infos:
         lines.append(f"## normal ({len(normal_infos)})\n")
         for idx, info in enumerate(normal_infos, 1):
-            short_name = truncate_name(info["name"])
-            price_str = f" | {format_price(info['danawa_price'])}" if info["danawa_price"] else ""
-            lines.append(f"{idx}) {short_name}{price_str}")
-            lines.append(f"link: {info['short_url']}")
+            parsed = parse_product_name(info["name"])
+            lines.append(f"{idx}) {parsed['base']}")
+            if parsed["options"]:
+                lines.append(f"   옵션: {' / '.join(parsed['options'])}")
+            if info["danawa_price"]:
+                lines.append(f"   가격: {format_price(info['danawa_price'])}")
+            lines.append(f"   link: {info['short_url']}")
             lines.append("")
 
     return "\n".join(lines)
@@ -1504,19 +1559,25 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
     if rocket_infos:
         lines.append(f"## rocket ({len(rocket_infos)})\n")
         for idx, info in enumerate(rocket_infos, 1):
-            short_name = truncate_name(info["name"], 30)
-            price_str = f" | {format_price(info['danawa_price'])}" if info["danawa_price"] else ""
-            lines.append(f"{idx}) {short_name}{price_str}")
-            lines.append(f"link: {info['short_url']}")
+            parsed = parse_product_name(info["name"])
+            lines.append(f"{idx}) {parsed['base']}")
+            if parsed["options"]:
+                lines.append(f"   옵션: {' / '.join(parsed['options'])}")
+            if info["danawa_price"]:
+                lines.append(f"   가격: {format_price(info['danawa_price'])}")
+            lines.append(f"   link: {info['short_url']}")
             lines.append("")
 
     if normal_infos:
         lines.append(f"## normal ({len(normal_infos)})\n")
         for idx, info in enumerate(normal_infos, 1):
-            short_name = truncate_name(info["name"], 30)
-            price_str = f" | {format_price(info['danawa_price'])}" if info["danawa_price"] else ""
-            lines.append(f"{idx}) {short_name}{price_str}")
-            lines.append(f"link: {info['short_url']}")
+            parsed = parse_product_name(info["name"])
+            lines.append(f"{idx}) {parsed['base']}")
+            if parsed["options"]:
+                lines.append(f"   옵션: {' / '.join(parsed['options'])}")
+            if info["danawa_price"]:
+                lines.append(f"   가격: {format_price(info['danawa_price'])}")
+            lines.append(f"   link: {info['short_url']}")
             lines.append("")
 
     return "\n".join(lines)
@@ -1590,20 +1651,26 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
     if rocket_infos:
         lines.append(f"## rocket ({len(rocket_infos)})\n")
         for idx, info in enumerate(rocket_infos, 1):
-            short_name = truncate_name(info["name"])
-            price_str = f" | {format_price(info['danawa_price'])}" if info["danawa_price"] else ""
-            lines.append(f"{idx}) {short_name}{price_str}")
-            lines.append(f"link: {info['short_url']}")
+            parsed = parse_product_name(info["name"])
+            lines.append(f"{idx}) {parsed['base']}")
+            if parsed["options"]:
+                lines.append(f"   옵션: {' / '.join(parsed['options'])}")
+            if info["danawa_price"]:
+                lines.append(f"   가격: {format_price(info['danawa_price'])}")
+            lines.append(f"   link: {info['short_url']}")
             lines.append("")
 
     # 일반배송 섹션
     if normal_infos:
         lines.append(f"## normal ({len(normal_infos)})\n")
         for idx, info in enumerate(normal_infos, 1):
-            short_name = truncate_name(info["name"])
-            price_str = f" | {format_price(info['danawa_price'])}" if info["danawa_price"] else ""
-            lines.append(f"{idx}) {short_name}{price_str}")
-            lines.append(f"link: {info['short_url']}")
+            parsed = parse_product_name(info["name"])
+            lines.append(f"{idx}) {parsed['base']}")
+            if parsed["options"]:
+                lines.append(f"   옵션: {' / '.join(parsed['options'])}")
+            if info["danawa_price"]:
+                lines.append(f"   가격: {format_price(info['danawa_price'])}")
+            lines.append(f"   link: {info['short_url']}")
             lines.append("")
 
     if not rocket_infos and not normal_infos:
@@ -1659,11 +1726,12 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 10) ->
         rank = product.get("rank", idx)
 
         short_url = await shorten_url(url)
-        short_name = truncate_name(name)
+        parsed = parse_product_name(name)
 
-        lines.append(f"{rank}) {short_name}")
-        lines.append(f"delivery: rocket")
-        lines.append(f"link: {short_url}")
+        lines.append(f"{rank}) {parsed['base']}")
+        if parsed["options"]:
+            lines.append(f"   옵션: {' / '.join(parsed['options'])}")
+        lines.append(f"   link: {short_url}")
         lines.append("")
 
     return "\n".join(lines)
@@ -1738,17 +1806,15 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
     lines = [f"# goldbox TOP {len(sorted_products)} (max {max_discount}% off)\n"]
 
     for idx, info in enumerate(product_infos, 1):
-        short_name = truncate_name(info["name"])
+        parsed = parse_product_name(info["name"])
         discount = f" -{info['discount_rate']}%" if info["discount_rate"] > 0 else ""
 
-        # 다나와 가격 있으면 표시
+        lines.append(f"{idx}) {parsed['base']}{discount}")
+        if parsed["options"]:
+            lines.append(f"   옵션: {' / '.join(parsed['options'])}")
         if info["danawa_price"]:
-            price_str = f" | {format_price(info['danawa_price'])}"
-        else:
-            price_str = ""
-
-        lines.append(f"{idx}) {short_name}{discount}{price_str}")
-        lines.append(f"link: {info['short_url']}")
+            lines.append(f"   가격: {format_price(info['danawa_price'])}")
+        lines.append(f"   link: {info['short_url']}")
         lines.append("")
 
     return "\n".join(lines)
