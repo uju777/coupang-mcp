@@ -13,6 +13,42 @@ from starlette.routing import Route
 # 서버 URL
 API_SERVER = os.getenv("COUPANG_API_SERVER", "https://coupang-mcp.netlify.app/.netlify/functions/coupang")
 
+# 정렬 의도 감지
+def detect_sort_intent(keyword: str) -> str:
+    """사용자 키워드에서 정렬 의도 파악
+
+    Returns: SIM(관련성), SALE(인기순), LOW(낮은가격), HIGH(높은가격)
+    """
+    keyword_lower = keyword.lower()
+
+    # 낮은 가격순
+    if any(w in keyword_lower for w in ['싼', '저렴', '가성비', '싸게', '최저가', '저가']):
+        return 'LOW'
+
+    # 인기/판매순
+    if any(w in keyword_lower for w in ['인기', '많이팔리', '베스트', '잘팔리', '판매량', '리뷰많', '후기많']):
+        return 'SALE'
+
+    # 높은 가격순
+    if any(w in keyword_lower for w in ['프리미엄', '고급', '비싼', '최고급']):
+        return 'HIGH'
+
+    # 기본: 관련성
+    return 'SIM'
+
+
+# 정렬 라벨
+SORT_LABELS = {
+    'SIM': '관련성순',
+    'SALE': '인기순',
+    'LOW': '낮은가격순',
+    'HIGH': '높은가격순'
+}
+
+
+# 하단 안내 메시지
+PRICE_DISCLAIMER = "\n※ 표시된 가격은 참고용입니다. 정확한 가격은 링크에서 확인하세요."
+
 # Server Card for Smithery scanning
 SERVER_CARD = {
     "version": "1.0",
@@ -1367,7 +1403,8 @@ async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
 
     # 쿠팡 API limit 상한선 (최대 10)
     api_limit = min(limit * 2, 10)
-    data = await call_api("search", {"keyword": keyword, "limit": api_limit})
+    sort_type = detect_sort_intent(keyword)
+    data = await call_api("search", {"keyword": keyword, "limit": api_limit, "sort": sort_type})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1417,10 +1454,10 @@ async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
             lines.append(f"   옵션: {' / '.join(options)}")
         if price_str:
             lines.append(f"   가격: {price_str}")
-        lines.append(f"   link: {info['short_url']}")
+        lines.append(f"   보러가기: {info['short_url']}")
         lines.append("")
 
-    return "\n".join(lines)
+    return "\n".join(lines) + PRICE_DISCLAIMER
 
 
 @mcp.tool()
@@ -1441,7 +1478,8 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
 
     # 쿠팡 API limit 상한선 (최대 10)
     api_limit = min(limit, 10)
-    data = await call_api("search", {"keyword": keyword, "limit": api_limit})
+    sort_type = detect_sort_intent(keyword)
+    data = await call_api("search", {"keyword": keyword, "limit": api_limit, "sort": sort_type})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1498,7 +1536,7 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
                 lines.append(f"   옵션: {' / '.join(parsed['options'])}")
             if info["danawa_price"]:
                 lines.append(f"   가격: {format_price(info['danawa_price'])}")
-            lines.append(f"   link: {info['short_url']}")
+            lines.append(f"   보러가기: {info['short_url']}")
             lines.append("")
 
     if normal_infos:
@@ -1510,10 +1548,10 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
                 lines.append(f"   옵션: {' / '.join(parsed['options'])}")
             if info["danawa_price"]:
                 lines.append(f"   가격: {format_price(info['danawa_price'])}")
-            lines.append(f"   link: {info['short_url']}")
+            lines.append(f"   보러가기: {info['short_url']}")
             lines.append("")
 
-    return "\n".join(lines)
+    return "\n".join(lines) + PRICE_DISCLAIMER
 
 
 @mcp.tool()
@@ -1536,7 +1574,8 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
 
     # 쿠팡 API limit 상한선 (최대 10)
     api_limit = min(limit, 10)
-    data = await call_api("search", {"keyword": keyword, "limit": api_limit})
+    sort_type = detect_sort_intent(keyword)
+    data = await call_api("search", {"keyword": keyword, "limit": api_limit, "sort": sort_type})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1589,7 +1628,7 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
                 lines.append(f"   옵션: {' / '.join(parsed['options'])}")
             if info["danawa_price"]:
                 lines.append(f"   가격: {format_price(info['danawa_price'])}")
-            lines.append(f"   link: {info['short_url']}")
+            lines.append(f"   보러가기: {info['short_url']}")
             lines.append("")
 
     if normal_infos:
@@ -1601,10 +1640,10 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
                 lines.append(f"   옵션: {' / '.join(parsed['options'])}")
             if info["danawa_price"]:
                 lines.append(f"   가격: {format_price(info['danawa_price'])}")
-            lines.append(f"   link: {info['short_url']}")
+            lines.append(f"   보러가기: {info['short_url']}")
             lines.append("")
 
-    return "\n".join(lines)
+    return "\n".join(lines) + PRICE_DISCLAIMER
 
 
 @mcp.tool()
@@ -1624,7 +1663,8 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
 
     # 쿠팡 API limit 상한선 (최대 10)
     api_limit = min(limit, 10)
-    data = await call_api("search", {"keyword": keyword, "limit": api_limit})
+    sort_type = detect_sort_intent(keyword)
+    data = await call_api("search", {"keyword": keyword, "limit": api_limit, "sort": sort_type})
 
     if "error" in data:
         return f"오류: {data.get('message', data['error'])}"
@@ -1681,7 +1721,7 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
                 lines.append(f"   옵션: {' / '.join(parsed['options'])}")
             if info["danawa_price"]:
                 lines.append(f"   가격: {format_price(info['danawa_price'])}")
-            lines.append(f"   link: {info['short_url']}")
+            lines.append(f"   보러가기: {info['short_url']}")
             lines.append("")
 
     # 일반배송 섹션
@@ -1694,13 +1734,13 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
                 lines.append(f"   옵션: {' / '.join(parsed['options'])}")
             if info["danawa_price"]:
                 lines.append(f"   가격: {format_price(info['danawa_price'])}")
-            lines.append(f"   link: {info['short_url']}")
+            lines.append(f"   보러가기: {info['short_url']}")
             lines.append("")
 
     if not rocket_infos and not normal_infos:
         return f"'{keyword}' 검색 결과가 없습니다."
 
-    return "\n".join(lines)
+    return "\n".join(lines) + PRICE_DISCLAIMER
 
 
 @mcp.tool()
@@ -1755,10 +1795,10 @@ async def get_coupang_best_products(category_id: int = 1016, limit: int = 10) ->
         lines.append(f"{rank}) {parsed['base']}")
         if parsed["options"]:
             lines.append(f"   옵션: {' / '.join(parsed['options'])}")
-        lines.append(f"   link: {short_url}")
+        lines.append(f"   보러가기: {short_url}")
         lines.append("")
 
-    return "\n".join(lines)
+    return "\n".join(lines) + PRICE_DISCLAIMER
 
 
 @mcp.tool()
@@ -1838,10 +1878,10 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
             lines.append(f"   옵션: {' / '.join(parsed['options'])}")
         if info["danawa_price"]:
             lines.append(f"   가격: {format_price(info['danawa_price'])}")
-        lines.append(f"   link: {info['short_url']}")
+        lines.append(f"   보러가기: {info['short_url']}")
         lines.append("")
 
-    return "\n".join(lines)
+    return "\n".join(lines) + PRICE_DISCLAIMER
 
 
 if __name__ == "__main__":

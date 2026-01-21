@@ -49,9 +49,10 @@ function makeRequest(method, path, queryString = '', body = null) {
   });
 }
 
-async function searchProducts(keyword, limit = 10) {
+async function searchProducts(keyword, limit = 10, sortType = 'SIM') {
+  // sortType: SIM(관련성), SALE(판매량), LOW(낮은가격), HIGH(높은가격)
   const path = '/v2/providers/affiliate_open_api/apis/openapi/v1/products/search';
-  const queryString = `keyword=${encodeURIComponent(keyword)}&limit=${Math.min(limit, 100)}`;
+  const queryString = `keyword=${encodeURIComponent(keyword)}&limit=${Math.min(limit, 100)}&sortType=${sortType}`;
   return makeRequest('GET', path, queryString);
 }
 
@@ -99,7 +100,8 @@ exports.handler = async (event, context) => {
         if (!params.keyword) {
           return { statusCode: 400, headers, body: JSON.stringify({ error: 'keyword required' }) };
         }
-        result = await searchProducts(params.keyword, parseInt(params.limit) || 10);
+        // sortType: SIM(관련성), SALE(판매량/인기), LOW(낮은가격), HIGH(높은가격)
+        result = await searchProducts(params.keyword, parseInt(params.limit) || 10, params.sort || 'SIM');
         break;
 
       case 'best':
@@ -125,11 +127,14 @@ exports.handler = async (event, context) => {
             error: 'Invalid action',
             available_actions: ['search', 'best', 'goldbox', 'deeplink'],
             examples: {
-              search: '?action=search&keyword=에어팟&limit=5',
+              search: '?action=search&keyword=에어팟&limit=5&sort=SIM',
+              search_low: '?action=search&keyword=에어팟&limit=5&sort=LOW',
+              search_sale: '?action=search&keyword=에어팟&limit=5&sort=SALE',
               best: '?action=best&category_id=1016&limit=5',
               goldbox: '?action=goldbox&limit=5',
               deeplink: '?action=deeplink&url=https://www.coupang.com/...'
-            }
+            },
+            sort_options: ['SIM(관련성)', 'SALE(인기순)', 'LOW(낮은가격)', 'HIGH(높은가격)']
           })
         };
     }
