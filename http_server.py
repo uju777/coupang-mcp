@@ -119,21 +119,45 @@ def parse_product_name(name: str) -> dict:
     - "이너홈 튼튼 니트릴 고무장갑 질긴, 5개, 중(M), 화이트"
       → base: "이너홈 튼튼 니트릴 고무장갑 질긴"
       → options: ["5개", "중(M)", "화이트"]
+    - "마미손 플라워 고무장갑 중(M)"
+      → base: "마미손 플라워 고무장갑"
+      → options: ["중(M)"]
     """
-    # 쉼표로 분리
+    options = []
+
+    # 1. 쉼표로 분리된 옵션 처리
     parts = [p.strip() for p in name.split(',')]
 
-    if len(parts) <= 1:
-        # 쉼표 없으면 그대로
-        return {"base": name, "options": []}
+    if len(parts) > 1:
+        base = parts[0]
+        options = [p for p in parts[1:] if p]
+    else:
+        base = name
 
-    # 첫 부분 = 기본 상품명
-    base = parts[0]
+        # 2. 쉼표 없을 때: 상품명 끝에서 옵션 패턴 추출
 
-    # 나머지 = 옵션들
-    options = [p for p in parts[1:] if p]
+        # 사이즈 패턴: 소(S), 중(M), 대(L) 등
+        size_match = re.search(r'\s+(소|중|대)\s*\([A-Z]+\)\s*$', base)
+        if size_match:
+            options.append(size_match.group().strip())
+            base = base[:size_match.start()]
 
-    return {"base": base, "options": options}
+        # 수량 패턴: 5개, 10켤레, 50매 등 (끝에 있을 때)
+        qty_match = re.search(r'\s+(\d+\s*(개|켤레|매|팩|세트|박스|장|롤|입))\s*$', base)
+        if qty_match:
+            options.append(qty_match.group(1).strip())
+            base = base[:qty_match.start()]
+
+        # 괄호 안 옵션: (대용량), (10개입) 등
+        paren_match = re.search(r'\s*\(([^)]+)\)\s*$', base)
+        if paren_match:
+            paren_content = paren_match.group(1)
+            # 숫자나 사이즈 관련이면 옵션으로 추출
+            if re.search(r'\d|대용량|소용량|미니|대형|중형|소형', paren_content):
+                options.append(f"({paren_content})")
+                base = base[:paren_match.start()]
+
+    return {"base": base.strip(), "options": options}
 
 
 def format_product_display(name: str, price: int) -> str:
