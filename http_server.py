@@ -49,6 +49,21 @@ SORT_LABELS = {
 # 하단 안내 메시지
 PRICE_DISCLAIMER = "\n※ 표시된 가격은 참고용입니다. 정확한 가격은 링크에서 확인하세요."
 
+
+def sort_products(products: list, sort_type: str) -> list:
+    """상품 목록 정렬
+
+    Args:
+        products: 상품 리스트
+        sort_type: SIM(그대로), LOW(낮은가격), HIGH(높은가격), SALE(그대로-API의존)
+    """
+    if sort_type == 'LOW':
+        return sorted(products, key=lambda x: x.get('productPrice', 0) or float('inf'))
+    elif sort_type == 'HIGH':
+        return sorted(products, key=lambda x: x.get('productPrice', 0) or 0, reverse=True)
+    # SIM, SALE은 API 순서 그대로
+    return products
+
 # Server Card for Smithery scanning
 SERVER_CARD = {
     "version": "1.0",
@@ -1414,6 +1429,9 @@ async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
 
     products = data.get("data", {}).get("productData", [])
 
+    # 클라이언트 정렬 적용
+    products = sort_products(products, sort_type)
+
     # 로켓배송만 필터
     rocket_products = [p for p in products if p.get("isRocket", False)][:limit]
 
@@ -1585,6 +1603,9 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
 
     products = data.get("data", {}).get("productData", [])
 
+    # 클라이언트 정렬 적용
+    products = sort_products(products, sort_type)
+
     if not products:
         return f"'{keyword}' 검색 결과가 없습니다."
 
@@ -1673,6 +1694,9 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
         return f"API 오류: {data.get('rMessage', '알 수 없는 오류')}"
 
     products = data.get("data", {}).get("productData", [])
+
+    # 클라이언트 정렬 적용
+    products = sort_products(products, sort_type)
 
     if not products:
         return f"'{keyword}' 검색 결과가 없습니다."
