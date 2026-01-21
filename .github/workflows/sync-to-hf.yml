@@ -1,0 +1,23 @@
+name: Sync to HuggingFace Space
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Push to HuggingFace Space
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git remote add hf https://huggingface.co/spaces/yuju777/coupang-mcp || true
+          git remote set-url hf https://yuju777:$HF_TOKEN@huggingface.co/spaces/yuju777/coupang-mcp
+          git push hf main --force

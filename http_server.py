@@ -117,6 +117,62 @@ def truncate_name(name: str, max_len: int = 30) -> str:
     return name[:max_len-2] + ".."
 
 
+import re
+
+def extract_option_from_name(name: str) -> str:
+    """상품명에서 옵션 정보 추출 (개수, 사이즈 등)
+
+    예시:
+    - "니트릴장갑 고무장갑 5개" → "5개"
+    - "물티슈 100매 3팩" → "100매 3팩"
+    - "티셔츠 XL" → "XL"
+    """
+    option_parts = []
+
+    # 개수 패턴: 숫자+개/매/팩/세트/박스/장/롤/입
+    qty_pattern = r'\d+\s*(개|매|팩|세트|박스|장|롤|입|p|P|ea|EA)'
+    qty_matches = re.findall(qty_pattern, name)
+    if qty_matches:
+        # 전체 매치 추출
+        for match in re.finditer(qty_pattern, name):
+            option_parts.append(match.group())
+
+    # 사이즈 패턴: S/M/L/XL/XXL 또는 소/중/대
+    size_pattern = r'\b(XXS|XS|S|M|L|XL|XXL|XXXL|소|중|대)\b'
+    size_matches = re.findall(size_pattern, name, re.IGNORECASE)
+    if size_matches:
+        option_parts.append(size_matches[-1].upper())  # 마지막 사이즈
+
+    # 용량 패턴: 숫자+ml/L/g/kg
+    vol_pattern = r'\d+\s*(ml|ML|mL|L|l|g|G|kg|KG)'
+    vol_matches = re.findall(vol_pattern, name)
+    if vol_matches:
+        for match in re.finditer(vol_pattern, name):
+            option_parts.append(match.group())
+
+    return " ".join(option_parts) if option_parts else ""
+
+
+def build_search_keyword(name: str, max_words: int = 4) -> str:
+    """상품명에서 검색 키워드 생성 (옵션 포함)
+
+    기존: 앞 4단어만 → "스트픽 끈질긴 니트릴장갑 고무장갑" (5개 누락!)
+    개선: 앞 4단어 + 옵션 → "스트픽 끈질긴 니트릴장갑 고무장갑 5개"
+    """
+    # 앞 N단어 추출
+    words = name.split()[:max_words]
+    base_keyword = " ".join(words)
+
+    # 옵션 추출 (전체 이름에서)
+    option = extract_option_from_name(name)
+
+    # 옵션이 이미 base_keyword에 포함되어 있으면 중복 방지
+    if option and option not in base_keyword:
+        return f"{base_keyword} {option}"
+
+    return base_keyword
+
+
 async def get_danawa_price(keyword: str) -> dict:
     """다나와에서 실제 가격 조회 (Netlify 도쿄 리전 프록시 경유)
 
@@ -1265,8 +1321,7 @@ async def search_coupang_rocket(keyword: str, limit: int = 10) -> str:
         name = product.get("productName", "")
         url = product.get("productUrl", "")
         coupang_price = product.get("productPrice", 0)
-        keywords = name.split()[:4]
-        search_keyword = " ".join(keywords)
+        search_keyword = build_search_keyword(name)
 
         danawa_task = get_danawa_price(search_keyword)
         url_task = shorten_url(url)
@@ -1339,8 +1394,7 @@ async def search_coupang_budget(keyword: str, max_price: int = 50000, limit: int
         name = product.get("productName", "")
         url = product.get("productUrl", "")
         coupang_price = product.get("productPrice", 0)
-        keywords = name.split()[:4]
-        search_keyword = " ".join(keywords)
+        search_keyword = build_search_keyword(name)
 
         danawa_task = get_danawa_price(search_keyword)
         url_task = shorten_url(url)
@@ -1425,8 +1479,7 @@ async def compare_coupang_products(keyword: str, limit: int = 5) -> str:
         name = product.get("productName", "")
         url = product.get("productUrl", "")
         coupang_price = product.get("productPrice", 0)
-        keywords = name.split()[:4]
-        search_keyword = " ".join(keywords)
+        search_keyword = build_search_keyword(name)
 
         danawa_task = get_danawa_price(search_keyword)
         url_task = shorten_url(url)
@@ -1508,8 +1561,7 @@ async def search_coupang_products(keyword: str, limit: int = 10) -> str:
         name = product.get("productName", "")
         url = product.get("productUrl", "")
         coupang_price = product.get("productPrice", 0)  # 쿠팡 API 가격 (폴백용)
-        keywords = name.split()[:4]
-        search_keyword = " ".join(keywords)
+        search_keyword = build_search_keyword(name)
 
         danawa_task = get_danawa_price(search_keyword)
         url_task = shorten_url(url)
@@ -1659,8 +1711,7 @@ async def get_coupang_goldbox(limit: int = 10) -> str:
         coupang_price = product.get("productPrice", 0)
 
         # 상품명에서 핵심 키워드 추출 (앞 3-4단어)
-        keywords = name.split()[:4]
-        search_keyword = " ".join(keywords)
+        search_keyword = build_search_keyword(name)
 
         # 병렬로 다나와 가격 + 단축URL 조회
         danawa_task = get_danawa_price(search_keyword)
