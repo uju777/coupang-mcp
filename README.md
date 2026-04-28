@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/uju777-coupang-mcp-badge.png)](https://mseep.ai/app/uju777-coupang-mcp)
+
 ---
 title: Coupang MCP
 emoji: 🛒
